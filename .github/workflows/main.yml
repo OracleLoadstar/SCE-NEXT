@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (修复 Chocolatey 参数传递)
+name: 构建并发布 WinUI 应用 (最终修复 Chocolatey 参数传递)
 
 on:
   push:
@@ -41,21 +41,14 @@ jobs:
               "--includeRecommended"
           )
 
-          # 将数组转换为JSON字符串，并移除方括号。这里不需要额外的双引号转义，因为 ConvertTo-Json 已经处理了
-          # choco --params 期待的是一个单一的字符串参数，它自己会解析
-          $packageParameters = ($vsComponents | ConvertTo-Json -Compress) -replace "`[|`]" # 移除 JSON 数组的方括号
+          # 将数组转换为JSON字符串，并移除方括号。
+          $packageParameters = ($vsComponents | ConvertTo-Json -Compress) -replace "`[|`]" 
 
           Write-Host "ℹ️ 传递给 Chocolatey 的 VS 组件参数 (原始内容): $($packageParameters)"
 
-          # ⭐ 核心修改：正确传递 --params 参数
-          # 使用字符串插值，并确保整个参数被双引号包围，以便 PowerShell 将其视为单个参数
-          # 这样 choco 就能正确接收参数字符串，然后它的内部逻辑会进一步解析
-          choco install visualstudio2022buildtools `
-            --version 17.0.0.0 `
-            --params "$packageParameters" ` # 这里直接使用双引号包围 $packageParameters
-            --yes `
-            --force `
-            --timeout-minutes=35
+          # ⭐ 核心修改：将 choco install 命令的所有参数放在一个逻辑行上
+          # 使用 `"` 包裹 $packageParameters 变量，确保它被视为一个单一的字符串参数
+          choco install visualstudio2022buildtools --version 17.0.0.0 --params "$packageParameters" --yes --force --timeout-minutes=35
 
           Write-Host "✅ Chocolatey 安装 Visual Studio Build Tools 完成。"
         shell: pwsh
