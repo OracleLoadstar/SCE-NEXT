@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (直接引用 MSBuild 路径)
+name: 构建并发布 WinUI 应用 (DesktopBridge & VsDevCmd)
 
 on:
   push:
@@ -36,6 +36,8 @@ jobs:
               "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
               "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0",
               "--add", "Microsoft.Net.Component.4.7.2.TargetingPack",
+              # ⭐ 核心修改：添加 DesktopBridge 组件
+              "--add", "Microsoft.VisualStudio.Component.DesktopBridge",
               "--includeRecommended",
               "--quiet",     # 静默安装
               "--norestart"  # 禁止安装后重启
@@ -50,7 +52,7 @@ jobs:
         timeout-minutes: 60 
 
       - name: 🔍 验证 Visual Studio 安装并设置 MSBuild 环境变量
-        id: setup_msbuild_env # 添加 ID，以便后续步骤引用其输出
+        id: setup_msbuild_env
         run: |
           $vsPath = "D:\VSBuildTools" 
           
@@ -70,35 +72,52 @@ jobs:
           Write-Host "✅ 步骤: 查找 MSBuild.exe..."
           if (-not (Test-Path $msbuildPath)) {
               Write-Error "❌ 错误: 未能找到新安装的 MSBuild.exe。请检查安装路径和结构。"
-              Write-Host "--- $vsPath 目录内容 (部分) ---"
               Get-ChildItem -Path $vsPath -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object FullName, Attributes, LastWriteTime | Format-Table -AutoSize
-              Write-Host "--- $vsPath 目录内容结束 ---"
               exit 1
           }
           
-          # 将 MSBuild 路径作为输出变量
           echo "msbuild_path=$msbuildPath" >> $env:GITHUB_OUTPUT
           
-          # 依然尝试添加到 PATH，以防万一
+          # ⭐ 核心修改：设置 VsDevCmd.bat 的路径并作为输出变量传递
+          $vsDevCmdPath = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $vsDevCmdPath)) {
+              # Fallback for older VS versions or different structures
+              $vsDevCmdPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvarsall.bat"
+          }
+          
+          Write-Host "✅ 步骤: 查找 VsDevCmd.bat 或 vcvarsall.bat..."
+          if (-not (Test-Path $vsDevCmdPath)) {
+              Write-Error "❌ 错误: 未能找到 VsDevCmd.bat 或 vcvarsall.bat。无法正确配置 Visual Studio 构建环境。"
+              exit 1
+          }
+          echo "vs_dev_cmd_path=$vsDevCmdPath" >> $env:GITHUB_OUTPUT # 导出 VsDevCmd.bat 路径
+          
+          # 依然尝试添加到 PATH，但主要依赖 VsDevCmd.bat
           echo "##vso[task.prependpath]$($msbuildPath | Split-Path -Parent)"
           echo "VSCMD_START_DIR=$vsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
           
           Write-Host "✅ 步骤: MSBuild 已添加到 PATH: $($msbuildPath | Split-Path -Parent)"
           Write-Host "✅ 步骤: VSCMD_START_DIR 已设置: $vsPath"
           Write-Host "✅ 步骤: MSBuild 路径已作为输出变量 'msbuild_path' 导出。"
+          Write-Host "✅ 步骤: VsDevCmd.bat 路径已作为输出变量 'vs_dev_cmd_path' 导出。"
         shell: pwsh
 
       - name: 🧹 清理 NuGet 全局缓存 (可选)
         run: dotnet nuget locals all --clear
         shell: pwsh
 
-      - name: 📦 恢复项目依赖 (使用 MSBuild 完整路径)
-        run: ${{ steps.setup_msbuild_env.outputs.msbuild_path }} App2.sln /t:restore
+      - name: 📦 恢复项目依赖 (使用 MSBuild 完整路径并初始化环境)
+        run: |
+          # ⭐ 核心修改：在执行 MSBuild 之前运行 VsDevCmd.bat
+          # 注意：批处理文件需要通过 cmd.exe 来执行，并在同一行中使用 && 连接
+          # 这样 VsDevCmd.bat 设置的环境变量才能在同一行执行的 msbuild 命令中生效
+          cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /t:restore"
         shell: pwsh
 
-      - name: 🚀 编译并打包 WinUI 应用为 MSIX (使用 MSBuild 完整路径)
+      - name: 🚀 编译并打包 WinUI 应用为 MSIX (使用 MSBuild 完整路径并初始化环境)
         run: |
-          ${{ steps.setup_msbuild_env.outputs.msbuild_path }} App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload
+          # ⭐ 核心修改：在执行 MSBuild 之前运行 VsDevCmd.bat
+          cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload"
         shell: pwsh 
 
       - name: 🔍 查找 MSIX 安装包
