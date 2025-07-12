@@ -1,4 +1,4 @@
-name: Build and Release WinUI App (Exact SDK Match & Clean Cache)
+name: Build and Release WinUI App (MSBuild Restore)
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
       - name: ⬇️ 检出代码
         uses: actions/checkout@v4
 
-      - name: ⚙️ 设置 .NET SDK (C++项目可能不直接依赖，但为兼容性保留)
+      - name: ⚙️ 设置 .NET SDK (此步主要为 dotnet CLI 工具，但核心恢复将由 MSBuild 执行)
         uses: actions/setup-dotnet@v4
         with:
           # 您的项目是C++ WinUI，.NET SDK版本可能不直接影响，但为确保所有工具链兼容性，
@@ -24,7 +24,7 @@ jobs:
           dotnet-version: '6.0.x' 
 
       - name: 🛠️ 安装 Visual Studio MSBuild 及精确匹配的WinUI/C++组件和SDK
-        # 此步骤使用 microsoft/setup-msbuild Action，并根据您的项目文件（.vcxproj和.wapproj）
+        # 此步骤使用 microsoft/setup-msbuild Action，并根据您的项目文件（.vcxproj和.wapprooj）
         # 精确指定所需的Windows SDK版本和所有必要的构建组件。
         uses: microsoft/setup-msbuild@v1.1
         with:
@@ -54,20 +54,19 @@ jobs:
             # .NET 构建工具 (与 setup-dotnet 中的版本一致)
             Microsoft.VisualStudio.Component.DotNetBuildTools.6.0 # 调整为你项目使用的 .NET 版本
 
-      - name: 🧹 清理 NuGet 全局缓存
-        # 在恢复依赖之前，清理本地的NuGet缓存，确保下载最新的、未损坏的包。
+      - name: 🧹 清理 NuGet 全局缓存 (可选，但有助于确保全新下载)
+        # 清理本地的NuGet缓存，确保下载最新的、未损坏的包。
         run: dotnet nuget locals all --clear
         shell: pwsh
 
-      - name: 📦 恢复项目依赖
-        # 运行 dotnet restore 来下载 NuGet 包
-        # 解决方案文件名为 'App2.sln'
-        run: dotnet restore App2.sln 
+      - name: 📦 恢复项目依赖 (使用 MSBuild)
+        # ⭐ 核心修改：使用 msbuild /t:restore 命令来恢复NuGet包
+        # 这对于 .vcxproj 和 .wapproj 项目是标准的NuGet恢复方式
+        run: msbuild App2.sln /t:restore
         shell: pwsh
 
       - name: 🚀 编译并打包 WinUI 应用为 MSIX
         # 使用 MSBuild 命令编译解决方案并打包为 MSIX
-        # MSBuild 此时应已正确添加到 PATH 中
         # 解决方案文件名为 'App2.sln'
         run: |
           msbuild App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload
@@ -116,7 +115,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && steps.find_msix.outputs.msix_path
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ steps.find_msix.outputs.msix_path }}
