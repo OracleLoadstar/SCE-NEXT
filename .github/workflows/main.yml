@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (最终修复 Chocolatey 参数传递)
+name: 构建并发布 WinUI 应用 (优化 VS Build Tools 组件)
 
 on:
   push:
@@ -30,25 +30,22 @@ jobs:
           $vsInstallPath = "D:\VSBuildTools"
           $vsComponents = @(
               "--installPath", $vsInstallPath,
-              "--add", "Microsoft.VisualStudio.Workload.VCTools",
-              "--add", "Microsoft.VisualStudio.Workload.UniversalBuildTools",
-              "--add", "Microsoft.VisualStudio.Component.WindowsAppSDK",
-              "--add", "Microsoft.Net.Component.4.7.2.TargetingPack",
-              "--add", "Microsoft.VisualStudio.Component.Windows10SDK.26100",
-              "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
-              "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
-              "--add", "Microsoft.VisualStudio.Component.DotNetBuildTools.6.0",
-              "--includeRecommended"
+              # ⭐ 核心修改：根据截图优化组件列表
+              "--add", "Microsoft.VisualStudio.Workload.UniversalPlatform", # 通用 Windows 平台开发工作负荷
+              "--add", "Microsoft.VisualStudio.Workload.VCTools", # C++ 构建工具工作负荷
+              "--add", "Microsoft.VisualStudio.Component.Windows10SDK.26100", # Windows 10 SDK (26100)
+              "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest", # 最新的 C++ 可再发行组件
+              "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler", # Roslyn 编译器
+              "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0", # .NET 6.0 构建工具
+              "--add", "Microsoft.Net.Component.4.7.2.TargetingPack", # .NET Framework 4.7.2 目标包
+              "--includeRecommended" # 包含推荐组件
           )
 
-          # 将数组转换为JSON字符串，并移除方括号。
           $packageParameters = ($vsComponents | ConvertTo-Json -Compress) -replace "`[|`]" 
 
           Write-Host "ℹ️ 传递给 Chocolatey 的 VS 组件参数 (原始内容): $($packageParameters)"
 
-          # ⭐ 核心修改：将 choco install 命令的所有参数放在一个逻辑行上
-          # 使用 `"` 包裹 $packageParameters 变量，确保它被视为一个单一的字符串参数
-          choco install visualstudio2022buildtools --version 17.0.0.0 --params "$packageParameters" --yes --force --timeout-minutes=35
+          choco install visualstudio2022buildtools --params "$packageParameters" --yes --force --timeout-minutes=35
 
           Write-Host "✅ Chocolatey 安装 Visual Studio Build Tools 完成。"
         shell: pwsh
