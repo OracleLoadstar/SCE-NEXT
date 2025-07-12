@@ -30,9 +30,18 @@ jobs:
         # Replace 'App2.sln' with your actual solution file name.
         # If you have a separate packaging project, you might need to target that specific project for 'msbuild /p:AppxBundlePlatforms'
         run: |
-          msbuild App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload
-        shell: pwsh # Use PowerShell for MSBuild commands
+          # Find the path to msbuild.exe using vswhere
+          $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products Microsoft.VisualStudio.Product.Community -requires Microsoft.Component.MSBuild -property installationPath
+          $msbuildExe = Join-Path $msbuildPath "MSBuild\Current\Bin\msbuild.exe"
 
+          if (-not (Test-Path $msbuildExe)) {
+              Write-Error "msbuild.exe not found at $msbuildExe. Please check Visual Studio installation requirements."
+              exit 1
+          }
+
+          # Execute msbuild with the full path
+          & $msbuildExe App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload
+        shell: pwsh # Use PowerShell for MSBuild commands
       - name: Find MSIX package
         id: find_msix
         run: |
