@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (验证 SLN 文件存在性)
+name: 构建并发布 WinUI 应用 (使用 Start-Process 优化 MSBuild 调用)
 
 on:
   push:
@@ -102,13 +102,12 @@ jobs:
         run: dotnet nuget locals all --clear
         shell: pwsh
 
-      - name: 📦 恢复项目依赖 (切换目录并使用 MSBuild)
+      - name: 📦 恢复项目依赖 (使用 Start-Process 调用 MSBuild)
         run: |
           $repoPath = "${{ github.workspace }}"
           Set-Location -Path $repoPath
           Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
           
-          # ⭐ 核心修改：列出当前目录内容以验证 App2.sln 的存在
           Write-Host "🔍 验证 App2.sln 在当前目录的存在..."
           Get-ChildItem -Path . | Format-Table -AutoSize
           if (-not (Test-Path "App2.sln")) {
@@ -117,16 +116,21 @@ jobs:
           }
           Write-Host "✅ App2.sln 已确认存在于当前目录。"
 
-          cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /t:restore"
+          # ⭐ 核心修改：构建命令字符串并使用 Start-Process
+          $command = "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /t:restore"
+          Write-Host "ℹ️ 正在执行命令: $command"
+          
+          # 使用 Start-Process 执行命令，确保在 cmd.exe 环境中运行
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $command -NoNewWindow -Wait -ErrorAction Stop
+          Write-Host "✅ MSBuild 恢复项目依赖完成。"
         shell: pwsh
 
-      - name: 🚀 编译并打包 WinUI 应用为 MSIX (切换目录并使用 MSBuild)
+      - name: 🚀 编译并打包 WinUI 应用为 MSIX (使用 Start-Process 调用 MSBuild)
         run: |
           $repoPath = "${{ github.workspace }}"
           Set-Location -Path $repoPath
           Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
 
-          # ⭐ 核心修改：列出当前目录内容以验证 App2.sln 的存在
           Write-Host "🔍 验证 App2.sln 在当前目录的存在..."
           Get-ChildItem -Path . | Format-Table -AutoSize
           if (-not (Test-Path "App2.sln")) {
@@ -135,7 +139,13 @@ jobs:
           }
           Write-Host "✅ App2.sln 已确认存在于当前目录。"
 
-          cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload"
+          # ⭐ 核心修改：构建命令字符串并使用 Start-Process
+          $command = "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload"
+          Write-Host "ℹ️ 正在执行命令: $command"
+
+          # 使用 Start-Process 执行命令，确保在 cmd.exe 环境中运行
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $command -NoNewWindow -Wait -ErrorAction Stop
+          Write-Host "✅ MSBuild 编译并打包 WinUI 应用完成。"
         shell: pwsh 
 
       - name: 🔍 查找 MSIX 安装包
