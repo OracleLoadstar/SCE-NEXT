@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (DesktopBridge & VsDevCmd)
+name: 构建并发布 WinUI 应用 (解决 SLN 文件找不到问题)
 
 on:
   push:
@@ -36,7 +36,6 @@ jobs:
               "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
               "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0",
               "--add", "Microsoft.Net.Component.4.7.2.TargetingPack",
-              # ⭐ 核心修改：添加 DesktopBridge 组件
               "--add", "Microsoft.VisualStudio.Component.DesktopBridge",
               "--includeRecommended",
               "--quiet",     # 静默安装
@@ -78,10 +77,8 @@ jobs:
           
           echo "msbuild_path=$msbuildPath" >> $env:GITHUB_OUTPUT
           
-          # ⭐ 核心修改：设置 VsDevCmd.bat 的路径并作为输出变量传递
           $vsDevCmdPath = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
           if (-not (Test-Path $vsDevCmdPath)) {
-              # Fallback for older VS versions or different structures
               $vsDevCmdPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvarsall.bat"
           }
           
@@ -90,9 +87,8 @@ jobs:
               Write-Error "❌ 错误: 未能找到 VsDevCmd.bat 或 vcvarsall.bat。无法正确配置 Visual Studio 构建环境。"
               exit 1
           }
-          echo "vs_dev_cmd_path=$vsDevCmdPath" >> $env:GITHUB_OUTPUT # 导出 VsDevCmd.bat 路径
+          echo "vs_dev_cmd_path=$vsDevCmdPath" >> $env:GITHUB_OUTPUT
           
-          # 依然尝试添加到 PATH，但主要依赖 VsDevCmd.bat
           echo "##vso[task.prependpath]$($msbuildPath | Split-Path -Parent)"
           echo "VSCMD_START_DIR=$vsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
           
@@ -106,23 +102,35 @@ jobs:
         run: dotnet nuget locals all --clear
         shell: pwsh
 
-      - name: 📦 恢复项目依赖 (使用 MSBuild 完整路径并初始化环境)
+      - name: 📦 恢复项目依赖 (切换目录并使用 MSBuild)
+        # ⭐ 核心修改：在执行 MSBuild 前切换到解决方案文件目录
+        # 假设 App2.sln 在仓库根目录，即 D:\a\SCE-NEXT\SCE-NEXT
         run: |
-          # ⭐ 核心修改：在执行 MSBuild 之前运行 VsDevCmd.bat
-          # 注意：批处理文件需要通过 cmd.exe 来执行，并在同一行中使用 && 连接
-          # 这样 VsDevCmd.bat 设置的环境变量才能在同一行执行的 msbuild 命令中生效
+          $repoPath = "${{ github.workspace }}" # 这是 Actions 默认的仓库根目录
+          Set-Location -Path $repoPath
+          Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
+          
           cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /t:restore"
         shell: pwsh
 
-      - name: 🚀 编译并打包 WinUI 应用为 MSIX (使用 MSBuild 完整路径并初始化环境)
+      - name: 🚀 编译并打包 WinUI 应用为 MSIX (切换目录并使用 MSBuild)
+        # ⭐ 核心修改：在执行 MSBuild 前切换到解决方案文件目录
         run: |
-          # ⭐ 核心修改：在执行 MSBuild 之前运行 VsDevCmd.bat
+          $repoPath = "${{ github.workspace }}" # 这是 Actions 默认的仓库根目录
+          Set-Location -Path $repoPath
+          Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
+
           cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload"
         shell: pwsh 
 
       - name: 🔍 查找 MSIX 安装包
         id: find_msix
         run: |
+          # 确保在查找 MSIX 时也在正确的目录下
+          $repoPath = "${{ github.workspace }}"
+          Set-Location -Path $repoPath
+          Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
+
           $msixPath = Get-ChildItem -Path ".\**\*.msix" -Recurse | Where-Object { $_.FullName -like "*AppPackages*" -or $_.DirectoryName -like "*bin\Release*" } | Select-Object -ExpandProperty FullName | Select-Object -First 1
           if ($msixPath) {
               echo "msix_path=$msixPath" >> $env:GITHUB_OUTPUT
