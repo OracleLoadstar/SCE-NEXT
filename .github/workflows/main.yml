@@ -1,4 +1,4 @@
-name: Build and Release WinUI App (MSBuild Restore)
+name: Build and Release WinUI App (Updated MSBuild Action)
 
 on:
   push:
@@ -24,9 +24,9 @@ jobs:
           dotnet-version: '6.0.x' 
 
       - name: 🛠️ 安装 Visual Studio MSBuild 及精确匹配的WinUI/C++组件和SDK
-        # 此步骤使用 microsoft/setup-msbuild Action，并根据您的项目文件（.vcxproj和.wapprooj）
-        # 精确指定所需的Windows SDK版本和所有必要的构建组件。
-        uses: microsoft/setup-msbuild@v1.1
+        # ⭐ 核心修改：将 Action 版本从 v1.1 升级到 v2。
+        # v2 版本才支持 'components' 和 'msbuild-version' 输入。
+        uses: microsoft/setup-msbuild@v2 
         with:
           msbuild-version: latest # 安装最新版本的 MSBuild
           # 明确列出匹配你本地VS安装和SLN文件分析的组件ID
@@ -110,7 +110,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: 📤 上传 MSIX 到 Release 资产
+      - name: 📤 Upload MSIX to Release Assets
         # 仅在通过标签触发且 MSIX 文件找到时运行。将 MSIX 文件作为附件上传到 Release。
         if: startsWith(github.ref, 'refs/tags/') && steps.find_msix.outputs.msix_path
         uses: actions/upload-release-asset@v1
