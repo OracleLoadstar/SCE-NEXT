@@ -13,68 +13,88 @@ jobs:
     runs-on: windows-latest # WinUI 项目需要 Windows 运行器
 
     steps:
-      - name: 检出代码
+      - name: ⬇️ 检出代码
         uses: actions/checkout@v4
 
-      - name: 设置 .NET SDK
+      - name: ⚙️ 设置 .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '6.0.x' # ⭐ 请根据你的 WinUI 项目的 .NET 版本调整 (例如: 6.0.x, 7.0.x, 8.0.x)
+          # ⭐ 请根据你的 WinUI 项目的 .NET 版本调整 (例如: 6.0.x, 7.0.x, 8.0.x)
+          dotnet-version: '6.0.x' 
 
-      - name: 安装 Visual Studio MSBuild 工具
-        # 这一步使用一个专用的 action 来安装 MSBuild，比手动安装更可靠和高效
-        # 这个 action 会自动将 MSBuild 添加到 PATH 中
+      - name: 🛠️ 安装 Visual Studio MSBuild 工具及WinUI相关组件
+        # 使用 microsoft/setup-msbuild Action 确保安装 MSBuild 和 WinUI 构建所需的核心组件。
+        # 错误 MSB4062 往往是因为缺少了如 .NET Framework 4.7.2 Targeting Pack 等依赖。
+        # 此 Action 会自动将 MSBuild 添加到 PATH 中。
         uses: microsoft/setup-msbuild@v1.1
         with:
-          msbuild-version: latest # 安装最新版本的 MSBuild
-          # 如果你的项目需要特定的 VS 版本，可以指定 installation-path 或 components
-          # 例如: components: 'Microsoft.VisualStudio.Component.Desktop.SDK.Editor;Microsoft.VisualStudio.Component.UWP.BuildTools'
+          msbuild-version: latest
+          # 明确列出 WinUI 构建所需的组件
+          # 这些是基于常见 WinUI 项目依赖和MSB4062错误分析所选
+          components: |
+            Microsoft.VisualStudio.Component.MSBuild
+            Microsoft.VisualStudio.Component.Roslyn.Compiler
+            Microsoft.VisualStudio.Component.VC.Tools.x86.x64
+            # ⭐ 根据你的项目目标调整 Windows SDK 版本，例如 10.0.19041.0
+            Microsoft.VisualStudio.Component.Windows10SDK.19041 
+            # ⭐ 根据你的项目 .NET 版本调整，与 setup-dotnet 中的版本一致
+            Microsoft.VisualStudio.Component.DotNetBuildTools.6.0  
+            # 这是关键！确保安装 .NET Framework 4.7.2 目标包，以解决 Compiler.dll 依赖问题
+            Microsoft.Net.Component.4.7.2.TargetingPack 
+            # 如果你的WinUI项目需要UWP特有功能或打包，可能还需要此组件
+            Microsoft.VisualStudio.Component.UWP.BuildTools 
 
-      - name: 恢复项目依赖
+      - name: 📦 恢复项目依赖
+        # 运行 dotnet restore 来下载和安装项目所需的 NuGet 包
         run: dotnet restore App2.sln # ⭐ 确保 'App2.sln' 是你的解决方案文件名
+        shell: pwsh
 
-      - name: 编译并打包 WinUI 应用为 MSIX
-        # 使用 MSBuild 命令编译解决方案并打包为 MSIX
-        # msbuild 此时已在 PATH 中
+      - name: 🚀 编译并打包 WinUI 应用为 MSIX
+        # 使用 MSBuild 命令编译解决方案并将其打包为 MSIX
+        # 由于 setup-msbuild Action 已将 MSBuild 添加到 PATH，可以直接调用
         run: |
           msbuild App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload
         shell: pwsh # 使用 PowerShell 执行 MSBuild 命令
 
-      - name: 查找 MSIX 安装包
+      - name: 🔍 查找 MSIX 安装包
         id: find_msix
         run: |
           # 动态查找生成的 .msix 文件。WinUI 项目的输出路径可能因项目结构而异。
           # 常见路径在 .\你的项目名\bin\Release\AppPackages\ 或 .\你的项目名\bin\Release\
+          # 此处使用通用查找，优先匹配 AppPackages 目录或 bin\Release 目录下的 .msix 文件
           $msixPath = Get-ChildItem -Path ".\**\*.msix" -Recurse | Where-Object { $_.FullName -like "*AppPackages*" -or $_.DirectoryName -like "*bin\Release*" } | Select-Object -ExpandProperty FullName | Select-Object -First 1
           
           if ($msixPath) {
               echo "msix_path=$msixPath" >> $env:GITHUB_OUTPUT
-              Write-Host "已找到 MSIX 安装包: $msixPath"
+              Write-Host "✅ 已找到 MSIX 安装包: $msixPath"
           } else {
-              Write-Error "未找到 MSIX 安装包。请检查你的项目构建输出路径和 msbuild 参数。"
+              Write-Error "❌ 未找到 MSIX 安装包。请检查你的项目构建输出路径和 msbuild 参数。"
               exit 1
           }
         shell: pwsh
 
-      - name: 上传 MSIX 作为工作流产物
+      - name: ⬆️ 上传 MSIX 作为工作流产物
+        # 将找到的 MSIX 文件作为 GitHub Actions 的“工作流产物”上传，方便调试和下载
         uses: actions/upload-artifact@v4
         with:
           name: SCE-NEXT-MSIX-Package
           path: ${{ steps.find_msix.outputs.msix_path }}
 
-      - name: 创建 GitHub Release
-        if: startsWith(github.ref, 'refs/tags/') # 仅在通过标签触发时运行
+      - name: ✨ 创建 GitHub Release
+        # 仅在通过标签触发时运行。此步骤将在 GitHub 上创建一个新的 Release。
+        if: startsWith(github.ref, 'refs/tags/')
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub 自动提供的令牌
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub 自动提供的用于认证的令牌
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
 
-      - name: 上传 MSIX 到 Release 资产
+      - name: 📤 上传 MSIX 到 Release 资产
+        # 仅在通过标签触发且 MSIX 文件找到时运行。此步骤将 MSIX 文件作为附件上传到 Release。
         if: startsWith(github.ref, 'refs/tags/') && steps.find_msix.outputs.msix_path
         uses: actions/upload-release-asset@v1
         env:
