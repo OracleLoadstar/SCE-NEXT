@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (直接传递 VS 安装参数给 Chocolatey)
+name: 构建并发布 WinUI 应用 (修正 MSBuild 路径)
 
 on:
   push:
@@ -27,58 +27,45 @@ jobs:
           choco -?
           Write-Host "✅ Chocolatey 已可用。"
 
-          # ⭐ 核心修改：将所有 Visual Studio 安装器参数直接组合成一个字符串
-          # 确保每个参数和值都是独立项，由空格分隔
-          # 注意：路径如果包含空格，需要用双引号包围 (D:\VSBuildTools 不含空格，所以可以不包)
           $vsInstallerArguments = @(
               "--installPath", "D:\VSBuildTools",
               "--add", "Microsoft.VisualStudio.Workload.UniversalPlatform",
               "--add", "Microsoft.VisualStudio.Workload.VCTools",
               "--add", "Microsoft.VisualStudio.Component.Windows10SDK.26100",
-              # --add Microsoft.VisualStudio.Component.WindowsAppSDK 如果 WinUI 需要，但通常包含在 UniversalPlatform 中
               "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
               "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
               "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0",
               "--add", "Microsoft.Net.Component.4.7.2.TargetingPack",
-              "--includeRecommended",     # 静默安装
+              "--includeRecommended",
+              "--quiet",     # 静默安装
               "--norestart"  # 禁止安装后重启
-          ) -join ' ' # 将数组连接成一个空格分隔的字符串
+          ) -join ' '
 
-          # 将整个 vsInstallerArguments 字符串作为 --params 的值传递
-          # choco --params 期待的是一个字符串，这个字符串由 Chocolatey 包的内部脚本解析
-          # 这样 vsInstallerArguments 就会被直接传递给 Install-VisualStudio 或类似的内部逻辑
           Write-Host "ℹ️ 传递给 Chocolatey 的原始 VS 安装参数字符串: '$vsInstallerArguments'"
 
           choco install visualstudio2022buildtools --params "'$vsInstallerArguments'" --yes --force --timeout-minutes=50
 
           Write-Host "✅ Chocolatey 安装 Visual Studio Build Tools 完成。"
         shell: pwsh
-        timeout-minutes: 60 # 进一步增加超时时间
+        timeout-minutes: 60 
 
       - name: 🔍 验证 Visual Studio 安装并设置 MSBuild 环境变量
         id: setup_msbuild_env
         run: |
-          # Chocolatey 的 VS 包通常会忽略 --installPath 并安装到默认位置
-          # 常见的路径是 C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+          # ⭐ 核心修改：直接使用我们指定的安装路径 D:\VSBuildTools
+          $vsPath = "D:\VSBuildTools" 
           
-          $actualVsPath = (Get-ChildItem -Path "C:\Program Files (x86)\Microsoft Visual Studio\*" -Directory | Where-Object { $_.Name -like "*2022*" -and $_.Name -like "*BuildTools*" } | Select-Object -ExpandProperty FullName -First 1)
-
-          if (-not $actualVsPath) {
-             $actualVsPath = (Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\*" -Directory | Where-Object { $_.Name -like "*2022*" -and $_.Name -like "*BuildTools*" } | Select-Object -ExpandProperty FullName -First 1)
-          }
-
-          if (-not $actualVsPath) {
-              Write-Error "❌ 错误: 未能在默认位置找到 Visual Studio Build Tools 2022 的安装路径。请检查 Chocolatey 安装日志。"
-              Write-Host "--- C:\Program Files (x86)\Microsoft Visual Studio\ 目录内容 ---"
-              Get-ChildItem -Path "C:\Program Files (x86)\Microsoft Visual Studio\" -ErrorAction SilentlyContinue | Format-Table -AutoSize
-              Write-Host "--- C:\Program Files\Microsoft Visual Studio\ 目录内容 ---"
-              Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\" -ErrorAction SilentlyContinue | Format-Table -AutoSize
+          # 验证路径是否存在，如果不存在则报错
+          if (-not (Test-Path $vsPath)) {
+              Write-Error "❌ 错误: Visual Studio Build Tools 2022 未安装在预期的路径: $vsPath"
+              Write-Host "请检查 Chocolatey 安装日志，确认安装是否成功以及实际安装位置。"
               exit 1
           }
           
-          Write-Host "✅ 步骤: Visual Studio Build Tools 2022 安装路径: $actualVsPath"
-          $vsPath = $actualVsPath 
+          Write-Host "✅ 步骤: Visual Studio Build Tools 2022 安装路径: $vsPath"
 
+          # 查找 MSBuild.exe 的路径
+          # MSBuild 可以在 $vsPath\MSBuild\Current\Bin 或 $vsPath\MSBuild\17.0\Bin
           $msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
           if (-not (Test-Path $msbuildPath)) {
               $msbuildPath = Join-Path $vsPath "MSBuild\17.0\Bin\MSBuild.exe" 
@@ -87,16 +74,19 @@ jobs:
           Write-Host "✅ 步骤: 查找 MSBuild.exe..."
           if (-not (Test-Path $msbuildPath)) {
               Write-Error "❌ 错误: 未能找到新安装的 MSBuild.exe。请检查安装路径和结构。"
-              Write-Host "--- $vsPath 目录内容 ---"
-              Get-ChildItem -Path $vsPath -Recurse -ErrorAction SilentlyContinue | Format-Table -AutoSize
+              Write-Host "--- $vsPath 目录内容 (部分) ---"
+              Get-ChildItem -Path $vsPath -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object FullName, Attributes, LastWriteTime | Format-Table -AutoSize
               Write-Host "--- $vsPath 目录内容结束 ---"
               exit 1
           }
           
+          # 添加 MSBuild 路径到 PATH 环境变量
           echo "##vso[task.prependpath]$($msbuildPath | Split-Path -Parent)"
+          # 设置 VSCMD_START_DIR 环境变量
           echo "VSCMD_START_DIR=$vsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
           
           Write-Host "✅ 步骤: MSBuild 已添加到 PATH: $($msbuildPath | Split-Path -Parent)"
+          Write-Host "✅ 步骤: VSCMD_START_DIR 已设置: $vsPath"
         shell: pwsh
 
       - name: 🧹 清理 NuGet 全局缓存 (可选)
