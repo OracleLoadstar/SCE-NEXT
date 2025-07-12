@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (VS Build Tools 安装修复与强化日志)
+name: 构建并发布 WinUI 应用 (终极 VS Build Tools 调试)
 
 on:
   push:
@@ -23,21 +23,24 @@ jobs:
 
       - name: ⬇️ 下载 Visual Studio Build Tools 安装器
         run: |
+          Write-Host "✅ 步骤: 开始下载 vs_buildtools.exe"
           Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile vs_buildtools.exe
-          Write-Host "✅ vs_buildtools.exe 下载完成。"
+          Write-Host "✅ 步骤: vs_buildtools.exe 下载完成。"
+          # 验证文件是否存在
+          if (-not (Test-Path "vs_buildtools.exe")) {
+              Write-Error "❌ 错误: vs_buildtools.exe 文件未成功下载。"
+              exit 1
+          }
         shell: pwsh
 
-      - name: 🛠️ 安装 Visual Studio Build Tools 及所需组件 (单次执行，强制输出)
-        # ⭐ 核心修改：只执行 Start-Process 一次，并捕获其进程对象以获取退出码
+      - name: 🛠️ 安装 Visual Studio Build Tools 及所需组件 (终极调试)
         run: |
           $logFile = "vs_install_output.log"
           $errorFile = "vs_install_error.log"
 
-          Write-Host "ℹ️ 开始安装 Visual Studio Build Tools，输出将重定向到日志文件 '$logFile' 和 '$errorFile'..."
-
-          # 执行安装器，捕获其输出和错误到文件，并等待其完成
-          # -PassThru 参数是关键，它会返回进程对象，我们可以从中获取 ExitCode
-          $process = Start-Process -FilePath ".\vs_buildtools.exe" -ArgumentList @(
+          Write-Host "✅ 步骤: 准备执行 vs_buildtools.exe 安装命令。"
+          Write-Host "ℹ️ 安装命令参数："
+          $arguments = @(
               "--installPath", "D:\VSBuildTools",
               "--add", "Microsoft.VisualStudio.Workload.VCTools",
               "--add", "Microsoft.VisualStudio.Workload.UniversalBuildTools",
@@ -49,8 +52,15 @@ jobs:
               "--add", "Microsoft.VisualStudio.Component.DotNetBuildTools.6.0",
               "--includeRecommended",
               "--wait"
-          ) -RedirectStandardOutput $logFile -RedirectStandardError $errorFile -NoNewWindow -Wait -PassThru
+          )
+          $arguments | ForEach-Object { Write-Host "  - $_" } # 打印所有参数
+          Write-Host "ℹ️ 安装输出将重定向到日志文件 '$logFile' 和 '$errorFile'..."
+
+          # 执行安装器，捕获其输出和错误到文件，并等待其完成
+          $process = Start-Process -FilePath ".\vs_buildtools.exe" -ArgumentList $arguments -RedirectStandardOutput $logFile -RedirectStandardError $errorFile -NoNewWindow -Wait -PassThru
           
+          Write-Host "✅ 步骤: vs_buildtools.exe 进程已退出。检查日志文件内容。"
+
           Write-Host "--- Visual Studio 安装标准输出 ---"
           Get-Content $logFile -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ }
           Write-Host "--- Visual Studio 安装标准输出结束 ---"
@@ -60,33 +70,39 @@ jobs:
           Write-Host "--- Visual Studio 安装标准错误结束 ---"
           
           # 检查安装器进程的退出码
+          Write-Host "ℹ️ Visual Studio Build Tools 安装器退出码: $($process.ExitCode)"
           if ($process.ExitCode -ne 0) {
-              Write-Error "Visual Studio Build Tools 安装器退出码非零: $($process.ExitCode)。安装可能失败。"
-              # 如果安装失败，则退出此步骤，并使用安装器的退出码
+              Write-Error "❌ 错误: Visual Studio Build Tools 安装器退出码非零。安装可能失败。"
               exit $process.ExitCode
           }
-          Write-Host "✅ Visual Studio Build Tools 安装器进程已完成。"
+          Write-Host "✅ 步骤: Visual Studio Build Tools 安装器进程成功退出 (退出码为0)。"
 
         shell: pwsh
-        timeout-minutes: 30 # 保持较长的超时时间
+        timeout-minutes: 35 # 进一步延长超时时间，以防下载缓慢
 
       - name: 🔍 验证 Visual Studio 安装并设置 MSBuild 环境变量
         id: setup_msbuild_env
         run: |
           $vsPath = "D:\VSBuildTools"
-          $msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
           
+          Write-Host "✅ 步骤: 验证 D:\VSBuildTools 目录是否存在..."
           if (-not (Test-Path -Path $vsPath -PathType Container)) {
-              Write-Error "VS Build Tools 安装路径 '$vsPath' 不存在。安装可能失败。"
+              Write-Error "❌ 错误: VS Build Tools 安装路径 '$vsPath' 不存在。安装可能失败。"
+              Write-Host "--- D:\ 驱动器内容 ---"
+              Get-ChildItem -Path "D:\" -Recurse -ErrorAction SilentlyContinue | Format-Table -AutoSize # 检查 D 盘根目录
+              Write-Host "--- D:\ 驱动器内容结束 ---"
               exit 1
           }
+          Write-Host "✅ 步骤: D:\VSBuildTools 目录存在。"
 
+          $msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
           if (-not (Test-Path $msbuildPath)) {
               $msbuildPath = Join-Path $vsPath "MSBuild\17.0\Bin\MSBuild.exe" 
           }
           
+          Write-Host "✅ 步骤: 查找 MSBuild.exe..."
           if (-not (Test-Path $msbuildPath)) {
-              Write-Error "未能找到新安装的 MSBuild.exe。请检查安装路径和结构。"
+              Write-Error "❌ 错误: 未能找到新安装的 MSBuild.exe。请检查安装路径和结构。"
               Write-Host "--- D:\VSBuildTools 目录内容 ---"
               Get-ChildItem -Path "D:\VSBuildTools" -Recurse -ErrorAction SilentlyContinue | Format-Table -AutoSize
               Write-Host "--- D:\VSBuildTools 目录内容结束 ---"
@@ -96,7 +112,7 @@ jobs:
           echo "##vso[task.prependpath]$($msbuildPath | Split-Path -Parent)"
           echo "VSCMD_START_DIR=$vsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
           
-          Write-Host "✅ MSBuild 已添加到 PATH: $($msbuildPath | Split-Path -Parent)"
+          Write-Host "✅ 步骤: MSBuild 已添加到 PATH: $($msbuildPath | Split-Path -Parent)"
         shell: pwsh
 
       - name: ⬆️ 上传 Visual Studio 安装日志 (如果安装失败)
