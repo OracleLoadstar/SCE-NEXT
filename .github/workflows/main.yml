@@ -1,4 +1,4 @@
-name: Build and Release WinUI App (Exact SDK Match)
+name: Build and Release WinUI App (Exact SDK Match & Clean Cache)
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
         with:
           msbuild-version: latest # 安装最新版本的 MSBuild
-          # 精确列出匹配你本地VS安装和SLN文件分析的组件ID
+          # 明确列出匹配你本地VS安装和SLN文件分析的组件ID
           components: |
             Microsoft.VisualStudio.Component.MSBuild # MSBuild核心
             Microsoft.VisualStudio.Component.Roslyn.Compiler # C# 和 VB 编译器 (通常需要)
@@ -45,7 +45,7 @@ jobs:
             # 关键！解决 XAML Compiler.dll 对 .NET Framework 4.7.2 的依赖
             Microsoft.Net.Component.4.7.2.TargetingPack 
             
-            # ⭐ 最关键的调整：精确指定项目依赖的 Windows SDK 版本
+            # ⭐ 精确指定项目依赖的 Windows SDK 版本
             # 根据 App2 (Package).wapproj 中的 <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
             # 以及 App2.vcxproj 中引用的 SDK Build Tools 10.0.26100.4188
             # 这个组件ID通常是 Microsoft.VisualStudio.Component.Windows10SDK.版本号
@@ -53,6 +53,11 @@ jobs:
             
             # .NET 构建工具 (与 setup-dotnet 中的版本一致)
             Microsoft.VisualStudio.Component.DotNetBuildTools.6.0 # 调整为你项目使用的 .NET 版本
+
+      - name: 🧹 清理 NuGet 全局缓存
+        # 在恢复依赖之前，清理本地的NuGet缓存，确保下载最新的、未损坏的包。
+        run: dotnet nuget locals all --clear
+        shell: pwsh
 
       - name: 📦 恢复项目依赖
         # 运行 dotnet restore 来下载 NuGet 包
@@ -111,7 +116,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && steps.find_msix.outputs.msix_path
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ steps.find_msix.outputs.msix_path }}
