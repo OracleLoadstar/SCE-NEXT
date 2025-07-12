@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (修正 Chocolatey 包参数格式)
+name: 构建并发布 WinUI 应用 (直接传递 VS 安装参数给 Chocolatey)
 
 on:
   push:
@@ -27,34 +27,34 @@ jobs:
           choco -?
           Write-Host "✅ Chocolatey 已可用。"
 
-          # ⭐ 核心修改：构建 Visual Studio 安装器期望的原始参数字符串
-          # 确保每个参数和值都是独立项，由空格分隔，符合命令行习惯
-          # 对于包含空格的路径，需要用双引号包围
+          # ⭐ 核心修改：将所有 Visual Studio 安装器参数直接组合成一个字符串
+          # 确保每个参数和值都是独立项，由空格分隔
+          # 注意：路径如果包含空格，需要用双引号包围 (D:\VSBuildTools 不含空格，所以可以不包)
           $vsInstallerArguments = @(
               "--installPath", "D:\VSBuildTools",
               "--add", "Microsoft.VisualStudio.Workload.UniversalPlatform",
               "--add", "Microsoft.VisualStudio.Workload.VCTools",
               "--add", "Microsoft.VisualStudio.Component.Windows10SDK.26100",
+              # --add Microsoft.VisualStudio.Component.WindowsAppSDK 如果 WinUI 需要，但通常包含在 UniversalPlatform 中
               "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
               "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
               "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0",
               "--add", "Microsoft.Net.Component.4.7.2.TargetingPack",
               "--includeRecommended",
-              "--quiet", # 确保安装器静默运行
-              "--norestart" # 禁止安装后重启
+              "--quiet",     # 静默安装
+              "--norestart"  # 禁止安装后重启
           ) -join ' ' # 将数组连接成一个空格分隔的字符串
 
-          # PackageParameters 应该是一个键值对字符串，或者像这样直接传递 InstallArguments
-          # 根据 choco visualstudio2022buildtools 包的实现，它内部会接收 InstallArguments 参数
-          $packageParameters = "InstallArguments=`"$vsInstallerArguments`"" # 使用键值对形式，并将值用双引号转义
+          # 将整个 vsInstallerArguments 字符串作为 --params 的值传递
+          # choco --params 期待的是一个字符串，这个字符串由 Chocolatey 包的内部脚本解析
+          # 这样 vsInstallerArguments 就会被直接传递给 Install-VisualStudio 或类似的内部逻辑
+          Write-Host "ℹ️ 传递给 Chocolatey 的原始 VS 安装参数字符串: '$vsInstallerArguments'"
 
-          Write-Host "ℹ️ 传递给 Chocolatey 的 InstallArguments 参数: $($packageParameters)"
-
-          choco install visualstudio2022buildtools --params "$packageParameters" --yes --force --timeout-minutes=45
+          choco install visualstudio2022buildtools --params "'$vsInstallerArguments'" --yes --force --timeout-minutes=50
 
           Write-Host "✅ Chocolatey 安装 Visual Studio Build Tools 完成。"
         shell: pwsh
-        timeout-minutes: 50 # 增加超时时间，以防下载和安装时间较长
+        timeout-minutes: 60 # 进一步增加超时时间
 
       - name: 🔍 验证 Visual Studio 安装并设置 MSBuild 环境变量
         id: setup_msbuild_env
