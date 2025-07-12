@@ -1,0 +1,76 @@
+name: Build and Release WinUI App
+
+on:
+  push:
+    branches:
+      - main
+  create: # Trigger on tag creation for releases
+    tags:
+      - 'v*' # Matches tags like v1.0.0, v1.0, etc.
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest # WinUI projects require a Windows runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x' # Adjust to your WinUI project's .NET version (e.g., 6.0.x, 7.0.x, 8.0.x)
+
+      - name: Restore dependencies
+        run: dotnet restore App2.sln # Assumes App2.sln is your solution file
+
+      - name: Build and Publish WinUI App
+        # WinUI projects often have a packaging project.
+        # This command builds the solution and the packaging project.
+        # Replace 'App2.sln' with your actual solution file name.
+        # If you have a separate packaging project, you might need to target that specific project for 'msbuild /p:AppxBundlePlatforms'
+        run: |
+          msbuild App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload
+        shell: pwsh # Use PowerShell for MSBuild commands
+
+      - name: Find MSIX package
+        id: find_msix
+        run: |
+          $msixPath = Get-ChildItem -Path ".\App2\App2\bin\Release\*.msix" -Recurse | Select-Object -ExpandProperty FullName | Select-Object -First 1
+          if ($msixPath) {
+              echo "msix_path=$msixPath" >> $env:GITHUB_OUTPUT
+              echo "MSIX package found at: $msixPath"
+          } else {
+              Write-Error "MSIX package not found."
+              exit 1
+          }
+        shell: pwsh
+
+      - name: Upload MSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SCE-NEXT-MSIX-Package
+          path: ${{ steps.find_msix.outputs.msix_path }}
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') # Only run if triggered by a tag
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is automatically provided by GitHub
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload MSIX to Release Assets
+        if: startsWith(github.ref, 'refs/tags/') && steps.find_msix.outputs.msix_path
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_msix.outputs.msix_path }}
+          asset_name: SCE-NEXT.msix # You might want to dynamically name this based on your project
+          asset_content_type: application/msix
