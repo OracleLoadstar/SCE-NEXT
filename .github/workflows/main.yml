@@ -1,4 +1,4 @@
-name: Build and Release WinUI App (Updated MSBuild Action)
+name: 构建并发布 WinUI 应用 (PowerShell 组件安装)
 
 on:
   push:
@@ -16,58 +16,56 @@ jobs:
       - name: ⬇️ 检出代码
         uses: actions/checkout@v4
 
-      - name: ⚙️ 设置 .NET SDK (此步主要为 dotnet CLI 工具，但核心恢复将由 MSBuild 执行)
+      - name: ⚙️ 设置 .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          # 您的项目是C++ WinUI，.NET SDK版本可能不直接影响，但为确保所有工具链兼容性，
-          # 建议与您本地开发环境的.NET版本保持一致，或使用一个常用版本如6.0.x
-          dotnet-version: '6.0.x' 
+          dotnet-version: '6.0.x' # 保持 6.0.x
 
-      - name: 🛠️ 安装 Visual Studio MSBuild 及精确匹配的WinUI/C++组件和SDK
-        # ⭐ 核心修改：将 Action 版本从 v1.1 升级到 v2。
-        # v2 版本才支持 'components' 和 'msbuild-version' 输入。
+      - name: 🛠️ 安装缺失的 Visual Studio 组件
+        # ⭐ 重要修改：使用 PowerShell 显式安装组件。
+        # 这将确保特定的 SDK 和 WinUI 构建工具存在。
+        run: |
+          # 安装 VSSetup PowerShell 模块，用于管理 Visual Studio 组件
+          Install-Module -Name VSSetup -Force -Scope CurrentUser
+          
+          # 获取 Visual Studio 2022 (版本 17) 的安装路径
+          $vsInstallPath = (Get-VsInstallationPath -Version 17)
+          if (-not $vsInstallPath) {
+              Write-Error "未找到 Visual Studio 2022 (版本 17) 的安装路径。请检查 runner 环境。"
+              exit 1
+          }
+          Write-Host "Visual Studio 2022 安装路径: $vsInstallPath"
+          
+          # 添加 WinUI/UWP 构建工具
+          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.UWP.BuildTools -InstallPath $vsInstallPath
+          # 添加 Windows App SDK 组件
+          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.WindowsAppSDK -InstallPath $vsInstallPath
+          # 添加 C++ 构建工具 (v143)
+          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -InstallPath $vsInstallPath
+          # 添加 C++ 可再发行组件
+          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.VC.Redist.14.Latest -InstallPath $vsInstallPath
+          # 添加 .NET Framework 4.7.2 目标包 (XAML 编译器需要)
+          Add-VsComponent -Force -ComponentID Microsoft.Net.Component.4.7.2.TargetingPack -InstallPath $vsInstallPath
+          
+          # ⭐ 关键：安装项目依赖的特定 Windows SDK 10.0.26100.0
+          # 组件 ID 通常是 'Microsoft.VisualStudio.Component.Windows10SDK.构建号'
+          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.Windows10SDK.26100 -InstallPath $vsInstallPath
+          
+          Write-Host "✅ Visual Studio 组件安装完成。"
+        shell: pwsh
+
+      - name: 🛠️ 设置 MSBuild (在组件安装后，确保其路径正确)
         uses: microsoft/setup-msbuild@v2 
-        with:
-          msbuild-version: latest # 安装最新版本的 MSBuild
-          # 明确列出匹配你本地VS安装和SLN文件分析的组件ID
-          components: |
-            Microsoft.VisualStudio.Component.MSBuild # MSBuild核心
-            Microsoft.VisualStudio.Component.Roslyn.Compiler # C# 和 VB 编译器 (通常需要)
-            
-            # C++ 桌面开发工作负载核心组件 (根据SLN中的 .vcxproj 确认需要)
-            Microsoft.VisualStudio.Component.VC.Tools.x86.x64 # C++ 构建工具 (v143)
-            Microsoft.VisualStudio.Component.VC.Redist.14.Latest # 重要的 C++ 可再发行组件，解决DLL依赖
-            Microsoft.VisualStudio.Component.Desktop.SDK.Editor # 桌面开发相关的SDK和编辑器工具
-            
-            # Windows 应用开发工作负载核心组件 (根据 SLN 中的 .wapproj 确认需要)
-            Microsoft.VisualStudio.Component.UWP.BuildTools # UWP 构建工具
-            Microsoft.VisualStudio.Component.WindowsAppSDK # Windows App SDK 开发组件
-            # 关键！解决 XAML Compiler.dll 对 .NET Framework 4.7.2 的依赖
-            Microsoft.Net.Component.4.7.2.TargetingPack 
-            
-            # ⭐ 精确指定项目依赖的 Windows SDK 版本
-            # 根据 App2 (Package).wapproj 中的 <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
-            # 以及 App2.vcxproj 中引用的 SDK Build Tools 10.0.26100.4188
-            # 这个组件ID通常是 Microsoft.VisualStudio.Component.Windows10SDK.版本号
-            Microsoft.VisualStudio.Component.Windows10SDK.26100 
-            
-            # .NET 构建工具 (与 setup-dotnet 中的版本一致)
-            Microsoft.VisualStudio.Component.DotNetBuildTools.6.0 # 调整为你项目使用的 .NET 版本
 
       - name: 🧹 清理 NuGet 全局缓存 (可选，但有助于确保全新下载)
-        # 清理本地的NuGet缓存，确保下载最新的、未损坏的包。
         run: dotnet nuget locals all --clear
         shell: pwsh
 
       - name: 📦 恢复项目依赖 (使用 MSBuild)
-        # ⭐ 核心修改：使用 msbuild /t:restore 命令来恢复NuGet包
-        # 这对于 .vcxproj 和 .wapproj 项目是标准的NuGet恢复方式
         run: msbuild App2.sln /t:restore
         shell: pwsh
 
       - name: 🚀 编译并打包 WinUI 应用为 MSIX
-        # 使用 MSBuild 命令编译解决方案并打包为 MSIX
-        # 解决方案文件名为 'App2.sln'
         run: |
           msbuild App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload
         shell: pwsh 
@@ -75,12 +73,7 @@ jobs:
       - name: 🔍 查找 MSIX 安装包
         id: find_msix
         run: |
-          # 动态查找生成的 .msix 文件。对于 WinUI 项目，常见输出路径在：
-          # .\App2 (Package)\AppPackages\App2 (Package)_...\*.msix
-          # 或者 .\App2 (Package)\bin\Release\
-          # 我们使用更通用的递归搜索，优先匹配 AppPackages 目录或 bin\Release' 目录下的 .msix 文件
           $msixPath = Get-ChildItem -Path ".\**\*.msix" -Recurse | Where-Object { $_.FullName -like "*AppPackages*" -or $_.DirectoryName -like "*bin\Release*" } | Select-Object -ExpandProperty FullName | Select-Object -First 1
-          
           if ($msixPath) {
               echo "msix_path=$msixPath" >> $env:GITHUB_OUTPUT
               Write-Host "✅ 已找到 MSIX 安装包: $msixPath"
@@ -91,27 +84,24 @@ jobs:
         shell: pwsh
 
       - name: ⬆️ 上传 MSIX 作为工作流产物
-        # 将找到的 MSIX 文件作为 GitHub Actions 的“工作流产物”上传，方便调试和下载。
         uses: actions/upload-artifact@v4
         with:
           name: SCE-NEXT-MSIX-Package
           path: ${{ steps.find_msix.outputs.msix_path }}
 
       - name: ✨ 创建 GitHub Release
-        # 仅在通过标签触发时运行。此步骤会在 GitHub 上创建一个新的 Release。
         if: startsWith(github.ref, 'refs/tags/')
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub 自动提供的令牌
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
 
-      - name: 📤 Upload MSIX to Release Assets
-        # 仅在通过标签触发且 MSIX 文件找到时运行。将 MSIX 文件作为附件上传到 Release。
+      - name: 📤 上传 MSIX 到 Release 资产
         if: startsWith(github.ref, 'refs/tags/') && steps.find_msix.outputs.msix_path
         uses: actions/upload-release-asset@v1
         env:
@@ -119,5 +109,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ steps.find_msix.outputs.msix_path }}
-          asset_name: SCE-NEXT.msix # ⭐ 根据需要调整资产文件名
+          asset_name: SCE-NEXT.msix
           asset_content_type: application/msix
