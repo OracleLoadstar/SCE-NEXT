@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (通过 Chocolatey 安装 VS Build Tools)
+name: 构建并发布 WinUI 应用 (修复 Chocolatey 参数传递)
 
 on:
   push:
@@ -22,9 +22,6 @@ jobs:
           dotnet-version: '6.0.x' 
 
       - name: 🛠️ 通过 Chocolatey 安装 Visual Studio Build Tools 及所需组件
-        # ⭐ 核心修改：使用 choco install 命令
-        # --package-parameters 可以传递给 Chocolatey 包内部的安装脚本
-        # 这里我们将所有的 VS 组件参数打包成字符串，传递给 Chocolatey 的 VS 安装助手
         run: |
           Write-Host "ℹ️ 检查 Chocolatey 是否已安装..."
           choco -?
@@ -41,38 +38,34 @@ jobs:
               "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
               "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
               "--add", "Microsoft.VisualStudio.Component.DotNetBuildTools.6.0",
-              "--includeRecommended" # Chocolatey 包通常会处理 --wait 和 --quiet
+              "--includeRecommended"
           )
 
-          $packageParameters = ($vsComponents | ConvertTo-Json -Compress) -replace "`"","`"" # 将数组转换为JSON字符串，并转义双引号
-          $packageParameters = $packageParameters.Trim("[]") # 移除 JSON 数组的方括号
+          # 将数组转换为JSON字符串，并移除方括号。这里不需要额外的双引号转义，因为 ConvertTo-Json 已经处理了
+          # choco --params 期待的是一个单一的字符串参数，它自己会解析
+          $packageParameters = ($vsComponents | ConvertTo-Json -Compress) -replace "`[|`]" # 移除 JSON 数组的方括号
 
-          Write-Host "ℹ️ 传递给 Chocolatey 的 VS 组件参数: $($packageParameters)"
+          Write-Host "ℹ️ 传递给 Chocolatey 的 VS 组件参数 (原始内容): $($packageParameters)"
 
-          # 强制安装，并传递所有 VS 安装参数
-          # /InstallArguments 会将参数传递给 vs_buildtools.exe
-          # /PackageParameters 会将参数传递给 Chocolatey 包的安装脚本，由它来构建 vs_buildtools.exe 的参数
-          # 我们需要的是 /PackageParameters
+          # ⭐ 核心修改：正确传递 --params 参数
+          # 使用字符串插值，并确保整个参数被双引号包围，以便 PowerShell 将其视为单个参数
+          # 这样 choco 就能正确接收参数字符串，然后它的内部逻辑会进一步解析
           choco install visualstudio2022buildtools `
-            --version 17.0.0.0 ` # 明确指定版本，避免不可预测的最新版问题
-            --params "'$packageParameters'" ` # 确保参数被正确传递，这里需要单引号包围
-            --yes ` # 自动同意所有提示
-            --force ` # 强制安装/重新安装
-            --timeout-minutes=35 # 设置超时时间
+            --version 17.0.0.0 `
+            --params "$packageParameters" ` # 这里直接使用双引号包围 $packageParameters
+            --yes `
+            --force `
+            --timeout-minutes=35
 
           Write-Host "✅ Chocolatey 安装 Visual Studio Build Tools 完成。"
         shell: pwsh
-        timeout-minutes: 40 # 给予 Chocolatey 充足的下载和安装时间
+        timeout-minutes: 40 
 
       - name: 🔍 验证 Visual Studio 安装并设置 MSBuild 环境变量
         id: setup_msbuild_env
         run: |
-          $vsPath = "D:\VSBuildTools" # Chocolatey 默认安装到 Program Files，但我们尝试指定 D:\VSBuildTools
-                                      # Chocolatey 的 VS 包通常会忽略 --installPath 并安装到默认位置
-                                      # 所以我们可能需要根据实际安装路径调整
+          $vsPath = "D:\VSBuildTools" 
           
-          # 检查 Chocolatey 实际安装 VS Build Tools 的路径
-          # 通常在 C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
           $actualVsPath = (Get-ChildItem -Path "C:\Program Files (x86)\Microsoft Visual Studio\*" -Directory | Where-Object { $_.Name -like "*2022*" -and $_.Name -like "*BuildTools*" } | Select-Object -ExpandProperty FullName -First 1)
 
           if (-not $actualVsPath) {
@@ -89,7 +82,7 @@ jobs:
           }
           
           Write-Host "✅ 步骤: Visual Studio Build Tools 2022 安装路径: $actualVsPath"
-          $vsPath = $actualVsPath # 使用实际找到的路径
+          $vsPath = $actualVsPath 
 
           $msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
           if (-not (Test-Path $msbuildPath)) {
