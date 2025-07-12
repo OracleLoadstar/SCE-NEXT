@@ -1,45 +1,39 @@
-name: 构建并发布 WinUI 应用 (独立 VS Build Tools 环境)
+name: 构建并发布 WinUI 应用 (调试 VS Build Tools 安装)
 
 on:
   push:
     branches:
       - main
-  create: # 标签创建时触发（用于发布 Release）
+  create:
     tags:
-      - 'v*' # 匹配例如 v1.0.0, v1.0 等标签
+      - 'v*'
 
 jobs:
   build-and-release:
-    runs-on: windows-latest # WinUI 项目需要 Windows 运行器
+    runs-on: windows-latest
 
     steps:
       - name: ⬇️ 检出代码
         uses: actions/checkout@v4
 
-      - name: ⚙️ 设置 .NET SDK (保持，因为某些工具可能依赖它)
+      - name: ⚙️ 设置 .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x' 
 
       - name: ⬇️ 下载 Visual Studio Build Tools 安装器
-        # 下载 Visual Studio 2022 Build Tools 的安装器
         run: |
           Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile vs_buildtools.exe
         shell: pwsh
 
-      - name: 🛠️ 安装 Visual Studio Build Tools 及所需组件
-        # ⭐ 核心步骤：静默安装所需的 VS 组件
-        # 指定安装路径到 D:\VSBuildTools，确保独立性
-        # --add 参数指定工作负载和单个组件
-        # --includeRecommended 和 --includeOptional 可以包含推荐和可选的依赖，有时能解决隐性问题
-        # --quiet 静默安装，--wait 等待安装完成
+      - name: 🛠️ 安装 Visual Studio Build Tools 及所需组件 (调试模式)
+        # ⭐ 核心修改：移除 --quiet，并延长 timeout-minutes
         run: |
-          .\vs_buildtools.exe --installPath "D:\VSBuildTools" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Workload.UniversalBuildTools --add Microsoft.VisualStudio.Component.WindowsAppSDK --add Microsoft.Net.Component.4.7.2.TargetingPack --add Microsoft.VisualStudio.Component.Windows10SDK.26100 --add Microsoft.VisualStudio.Component.VC.Redist.14.Latest --add Microsoft.VisualStudio.Component.Roslyn.Compiler --add Microsoft.VisualStudio.Component.DotNetBuildTools.6.0 --includeRecommended --quiet --wait
+          .\vs_buildtools.exe --installPath "D:\VSBuildTools" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Workload.UniversalBuildTools --add Microsoft.VisualStudio.Component.WindowsAppSDK --add Microsoft.Net.Component.4.7.2.TargetingPack --add Microsoft.VisualStudio.Component.Windows10SDK.26100 --add Microsoft.VisualStudio.Component.VC.Redist.14.Latest --add Microsoft.VisualStudio.Component.Roslyn.Compiler --add Microsoft.VisualStudio.Component.DotNetBuildTools.6.0 --includeRecommended --wait
         shell: pwsh
-        timeout-minutes: 15 # 给安装过程足够的时间，通常需要5-15分钟
+        timeout-minutes: 25 # 增加超时时间，给予充足的下载和安装时间
 
       - name: 🔄 设置 MSBuild 环境变量 (指向新安装的 VS Build Tools)
-        # 找到新安装的 MSBuild.exe 路径并添加到 PATH
         run: |
           $vsPath = "D:\VSBuildTools"
           $msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
@@ -51,19 +45,20 @@ jobs:
           
           if (-not (Test-Path $msbuildPath)) {
               Write-Error "未能找到新安装的 MSBuild.exe。请检查安装路径和结构。"
+              # 添加 ls D:\VSBuildTools，以便在失败时查看安装目录内容，辅助调试
+              Write-Host "--- D:\VSBuildTools 目录内容 ---"
+              Get-ChildItem -Path "D:\VSBuildTools" -Recurse -ErrorAction SilentlyContinue | Format-Table -AutoSize
+              Write-Host "--- D:\VSBuildTools 目录内容结束 ---"
               exit 1
           }
           
-          # 将 MSBuild 所在的目录添加到 PATH
           echo "##vso[task.prependpath]$($msbuildPath | Split-Path -Parent)"
-          
-          # 设置 VSCMD_START_DIR 环境变量，有时对 C++ 构建环境很重要
           echo "VSCMD_START_DIR=$vsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
           
           Write-Host "✅ MSBuild 已添加到 PATH: $($msbuildPath | Split-Path -Parent)"
         shell: pwsh
 
-      - name: 🧹 清理 NuGet 全局缓存 (可选，但有助于确保全新下载)
+      - name: 🧹 清理 NuGet 全局缓存 (可选)
         run: dotnet nuget locals all --clear
         shell: pwsh
 
