@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (解决 SLN 文件找不到问题)
+name: 构建并发布 WinUI 应用 (验证 SLN 文件存在性)
 
 on:
   push:
@@ -103,22 +103,37 @@ jobs:
         shell: pwsh
 
       - name: 📦 恢复项目依赖 (切换目录并使用 MSBuild)
-        # ⭐ 核心修改：在执行 MSBuild 前切换到解决方案文件目录
-        # 假设 App2.sln 在仓库根目录，即 D:\a\SCE-NEXT\SCE-NEXT
         run: |
-          $repoPath = "${{ github.workspace }}" # 这是 Actions 默认的仓库根目录
+          $repoPath = "${{ github.workspace }}"
           Set-Location -Path $repoPath
           Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
           
+          # ⭐ 核心修改：列出当前目录内容以验证 App2.sln 的存在
+          Write-Host "🔍 验证 App2.sln 在当前目录的存在..."
+          Get-ChildItem -Path . | Format-Table -AutoSize
+          if (-not (Test-Path "App2.sln")) {
+              Write-Error "❌ 错误: App2.sln 未在当前目录找到。请检查文件是否存在或路径是否正确。"
+              exit 1
+          }
+          Write-Host "✅ App2.sln 已确认存在于当前目录。"
+
           cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /t:restore"
         shell: pwsh
 
       - name: 🚀 编译并打包 WinUI 应用为 MSIX (切换目录并使用 MSBuild)
-        # ⭐ 核心修改：在执行 MSBuild 前切换到解决方案文件目录
         run: |
-          $repoPath = "${{ github.workspace }}" # 这是 Actions 默认的仓库根目录
+          $repoPath = "${{ github.workspace }}"
           Set-Location -Path $repoPath
           Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
+
+          # ⭐ 核心修改：列出当前目录内容以验证 App2.sln 的存在
+          Write-Host "🔍 验证 App2.sln 在当前目录的存在..."
+          Get-ChildItem -Path . | Format-Table -AutoSize
+          if (-not (Test-Path "App2.sln")) {
+              Write-Error "❌ 错误: App2.sln 未在当前目录找到。请检查文件是否存在或路径是否正确。"
+              exit 1
+          }
+          Write-Host "✅ App2.sln 已确认存在于当前目录。"
 
           cmd.exe /c "call `"${{ steps.setup_msbuild_env.outputs.vs_dev_cmd_path }}`" && `"${{ steps.setup_msbuild_env.outputs.msbuild_path }}`" App2.sln /p:Configuration=Release /p:Platform="x64" /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload"
         shell: pwsh 
@@ -126,7 +141,6 @@ jobs:
       - name: 🔍 查找 MSIX 安装包
         id: find_msix
         run: |
-          # 确保在查找 MSIX 时也在正确的目录下
           $repoPath = "${{ github.workspace }}"
           Set-Location -Path $repoPath
           Write-Host "✅ 已将工作目录更改为: $(Get-Location)"
