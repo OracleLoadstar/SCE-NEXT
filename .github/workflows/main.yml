@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (优化 VS Build Tools 组件)
+name: 构建并发布 WinUI 应用 (修正 Chocolatey 包参数格式)
 
 on:
   push:
@@ -27,34 +27,40 @@ jobs:
           choco -?
           Write-Host "✅ Chocolatey 已可用。"
 
-          $vsInstallPath = "D:\VSBuildTools"
-          $vsComponents = @(
-              "--installPath", $vsInstallPath,
-              # ⭐ 核心修改：根据截图优化组件列表
-              "--add", "Microsoft.VisualStudio.Workload.UniversalPlatform", # 通用 Windows 平台开发工作负荷
-              "--add", "Microsoft.VisualStudio.Workload.VCTools", # C++ 构建工具工作负荷
-              "--add", "Microsoft.VisualStudio.Component.Windows10SDK.26100", # Windows 10 SDK (26100)
-              "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest", # 最新的 C++ 可再发行组件
-              "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler", # Roslyn 编译器
-              "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0", # .NET 6.0 构建工具
-              "--add", "Microsoft.Net.Component.4.7.2.TargetingPack", # .NET Framework 4.7.2 目标包
-              "--includeRecommended" # 包含推荐组件
-          )
+          # ⭐ 核心修改：构建 Visual Studio 安装器期望的原始参数字符串
+          # 确保每个参数和值都是独立项，由空格分隔，符合命令行习惯
+          # 对于包含空格的路径，需要用双引号包围
+          $vsInstallerArguments = @(
+              "--installPath", "D:\VSBuildTools",
+              "--add", "Microsoft.VisualStudio.Workload.UniversalPlatform",
+              "--add", "Microsoft.VisualStudio.Workload.VCTools",
+              "--add", "Microsoft.VisualStudio.Component.Windows10SDK.26100",
+              "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
+              "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
+              "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0",
+              "--add", "Microsoft.Net.Component.4.7.2.TargetingPack",
+              "--includeRecommended",
+              "--quiet", # 确保安装器静默运行
+              "--norestart" # 禁止安装后重启
+          ) -join ' ' # 将数组连接成一个空格分隔的字符串
 
-          $packageParameters = ($vsComponents | ConvertTo-Json -Compress) -replace "`[|`]" 
+          # PackageParameters 应该是一个键值对字符串，或者像这样直接传递 InstallArguments
+          # 根据 choco visualstudio2022buildtools 包的实现，它内部会接收 InstallArguments 参数
+          $packageParameters = "InstallArguments=`"$vsInstallerArguments`"" # 使用键值对形式，并将值用双引号转义
 
-          Write-Host "ℹ️ 传递给 Chocolatey 的 VS 组件参数 (原始内容): $($packageParameters)"
+          Write-Host "ℹ️ 传递给 Chocolatey 的 InstallArguments 参数: $($packageParameters)"
 
-          choco install visualstudio2022buildtools --params "$packageParameters" --yes --force --timeout-minutes=35
+          choco install visualstudio2022buildtools --params "$packageParameters" --yes --force --timeout-minutes=45
 
           Write-Host "✅ Chocolatey 安装 Visual Studio Build Tools 完成。"
         shell: pwsh
-        timeout-minutes: 40 
+        timeout-minutes: 50 # 增加超时时间，以防下载和安装时间较长
 
       - name: 🔍 验证 Visual Studio 安装并设置 MSBuild 环境变量
         id: setup_msbuild_env
         run: |
-          $vsPath = "D:\VSBuildTools" 
+          # Chocolatey 的 VS 包通常会忽略 --installPath 并安装到默认位置
+          # 常见的路径是 C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
           
           $actualVsPath = (Get-ChildItem -Path "C:\Program Files (x86)\Microsoft Visual Studio\*" -Directory | Where-Object { $_.Name -like "*2022*" -and $_.Name -like "*BuildTools*" } | Select-Object -ExpandProperty FullName -First 1)
 
