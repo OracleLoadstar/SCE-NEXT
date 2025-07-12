@@ -1,4 +1,4 @@
-name: 构建并发布 WinUI 应用 (PowerShell 组件安装)
+name: 构建并发布 WinUI 应用 (独立 VS Build Tools 环境)
 
 on:
   push:
@@ -16,46 +16,52 @@ jobs:
       - name: ⬇️ 检出代码
         uses: actions/checkout@v4
 
-      - name: ⚙️ 设置 .NET SDK
+      - name: ⚙️ 设置 .NET SDK (保持，因为某些工具可能依赖它)
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '6.0.x' # 保持 6.0.x
+          dotnet-version: '6.0.x' 
 
-      - name: 🛠️ 安装缺失的 Visual Studio 组件
-        # ⭐ 重要修改：使用 PowerShell 显式安装组件。
-        # 这将确保特定的 SDK 和 WinUI 构建工具存在。
+      - name: ⬇️ 下载 Visual Studio Build Tools 安装器
+        # 下载 Visual Studio 2022 Build Tools 的安装器
         run: |
-          # 安装 VSSetup PowerShell 模块，用于管理 Visual Studio 组件
-          Install-Module -Name VSSetup -Force -Scope CurrentUser
-          
-          # 获取 Visual Studio 2022 (版本 17) 的安装路径
-          $vsInstallPath = (Get-VsInstallationPath -Version 17)
-          if (-not $vsInstallPath) {
-              Write-Error "未找到 Visual Studio 2022 (版本 17) 的安装路径。请检查 runner 环境。"
-              exit 1
-          }
-          Write-Host "Visual Studio 2022 安装路径: $vsInstallPath"
-          
-          # 添加 WinUI/UWP 构建工具
-          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.UWP.BuildTools -InstallPath $vsInstallPath
-          # 添加 Windows App SDK 组件
-          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.WindowsAppSDK -InstallPath $vsInstallPath
-          # 添加 C++ 构建工具 (v143)
-          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -InstallPath $vsInstallPath
-          # 添加 C++ 可再发行组件
-          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.VC.Redist.14.Latest -InstallPath $vsInstallPath
-          # 添加 .NET Framework 4.7.2 目标包 (XAML 编译器需要)
-          Add-VsComponent -Force -ComponentID Microsoft.Net.Component.4.7.2.TargetingPack -InstallPath $vsInstallPath
-          
-          # ⭐ 关键：安装项目依赖的特定 Windows SDK 10.0.26100.0
-          # 组件 ID 通常是 'Microsoft.VisualStudio.Component.Windows10SDK.构建号'
-          Add-VsComponent -Force -ComponentID Microsoft.VisualStudio.Component.Windows10SDK.26100 -InstallPath $vsInstallPath
-          
-          Write-Host "✅ Visual Studio 组件安装完成。"
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile vs_buildtools.exe
         shell: pwsh
 
-      - name: 🛠️ 设置 MSBuild (在组件安装后，确保其路径正确)
-        uses: microsoft/setup-msbuild@v2 
+      - name: 🛠️ 安装 Visual Studio Build Tools 及所需组件
+        # ⭐ 核心步骤：静默安装所需的 VS 组件
+        # 指定安装路径到 D:\VSBuildTools，确保独立性
+        # --add 参数指定工作负载和单个组件
+        # --includeRecommended 和 --includeOptional 可以包含推荐和可选的依赖，有时能解决隐性问题
+        # --quiet 静默安装，--wait 等待安装完成
+        run: |
+          .\vs_buildtools.exe --installPath "D:\VSBuildTools" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Workload.UniversalBuildTools --add Microsoft.VisualStudio.Component.WindowsAppSDK --add Microsoft.Net.Component.4.7.2.TargetingPack --add Microsoft.VisualStudio.Component.Windows10SDK.26100 --add Microsoft.VisualStudio.Component.VC.Redist.14.Latest --add Microsoft.VisualStudio.Component.Roslyn.Compiler --add Microsoft.VisualStudio.Component.DotNetBuildTools.6.0 --includeRecommended --quiet --wait
+        shell: pwsh
+        timeout-minutes: 15 # 给安装过程足够的时间，通常需要5-15分钟
+
+      - name: 🔄 设置 MSBuild 环境变量 (指向新安装的 VS Build Tools)
+        # 找到新安装的 MSBuild.exe 路径并添加到 PATH
+        run: |
+          $vsPath = "D:\VSBuildTools"
+          $msbuildPath = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
+          
+          if (-not (Test-Path $msbuildPath)) {
+              # 兼容性查找，如果 Current\Bin 不存在，可能是 17.0\Bin
+              $msbuildPath = Join-Path $vsPath "MSBuild\17.0\Bin\MSBuild.exe" 
+          }
+          
+          if (-not (Test-Path $msbuildPath)) {
+              Write-Error "未能找到新安装的 MSBuild.exe。请检查安装路径和结构。"
+              exit 1
+          }
+          
+          # 将 MSBuild 所在的目录添加到 PATH
+          echo "##vso[task.prependpath]$($msbuildPath | Split-Path -Parent)"
+          
+          # 设置 VSCMD_START_DIR 环境变量，有时对 C++ 构建环境很重要
+          echo "VSCMD_START_DIR=$vsPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+          Write-Host "✅ MSBuild 已添加到 PATH: $($msbuildPath | Split-Path -Parent)"
+        shell: pwsh
 
       - name: 🧹 清理 NuGet 全局缓存 (可选，但有助于确保全新下载)
         run: dotnet nuget locals all --clear
