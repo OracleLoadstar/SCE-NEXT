@@ -40,8 +40,7 @@ jobs:
               "--add", "Microsoft.VisualStudio.Component.Roslyn.Compiler",
               "--add", "Microsoft.Net.Component.DotNetBuildTools.6.0",
               "--add", "Microsoft.Net.Component.4.7.2.TargetingPack",
-              "--includeRecommended",
-              "--quiet",     # 静默安装
+              "--includeRecommended",     # 静默安装
               "--norestart"  # 禁止安装后重启
           ) -join ' ' # 将数组连接成一个空格分隔的字符串
 
