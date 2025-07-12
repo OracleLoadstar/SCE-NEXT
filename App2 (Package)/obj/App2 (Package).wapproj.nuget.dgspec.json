@@ -1,0 +1,120 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2 (Package)\\App2 (Package).wapproj": {}
+  },
+  "projects": {
+    "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2 (Package)\\App2 (Package).wapproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2 (Package)\\App2 (Package).wapproj",
+        "projectName": "App2 (Package)",
+        "projectPath": "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2 (Package)\\App2 (Package).wapproj",
+        "packagesPath": "C:\\Users\\Administrator.xingguangcuican\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2 (Package)\\obj\\",
+        "projectStyle": "PackageReference",
+        "UsingMicrosoftNETSdk": false,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\Administrator.xingguangcuican\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net451"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "uap10.0.17763": {
+            "targetAlias": "net451",
+            "projectReferences": {
+              "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2\\App2.vcxproj": {
+                "projectPath": "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2\\App2.vcxproj"
+              }
+            }
+          }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "uap10.0.17763": {
+          "targetAlias": "net451",
+          "dependencies": {
+            "Microsoft.Windows.SDK.BuildTools": {
+              "target": "Package",
+              "version": "[10.0.26100.4188, )"
+            },
+            "Microsoft.WindowsAppSDK": {
+              "target": "Package",
+              "version": "[1.7.250606001, )"
+            }
+          },
+          "imports": [
+            "netcoreapp3.1",
+            "netcoreapp3.0",
+            "netcoreapp2.0",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481",
+            "net10.0-windows10.0.26100",
+            "net461"
+          ],
+          "assetTargetFallback": true,
+          "warn": true
+        }
+      },
+      "runtimes": {
+        "win10-arm": {
+          "#import": []
+        },
+        "win10-arm-aot": {
+          "#import": []
+        },
+        "win10-arm64-aot": {
+          "#import": []
+        },
+        "win10-x64": {
+          "#import": []
+        },
+        "win10-x64-aot": {
+          "#import": []
+        },
+        "win10-x86": {
+          "#import": []
+        },
+        "win10-x86-aot": {
+          "#import": []
+        }
+      }
+    },
+    "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2\\App2.vcxproj": {
+      "restore": {
+        "projectUniqueName": "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2\\App2.vcxproj",
+        "projectName": "App2",
+        "projectPath": "C:\\Users\\Administrator.xingguangcuican\\source\\repos\\App2\\App2\\App2.vcxproj",
+        "UsingMicrosoftNETSdk": false,
+        "frameworks": {
+          "native": {
+            "projectReferences": {}
+          }
+        }
+      },
+      "frameworks": {
+        "native": {}
+      }
+    }
+  }
+}

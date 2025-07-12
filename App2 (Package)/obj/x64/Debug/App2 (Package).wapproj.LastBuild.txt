@@ -1,0 +1,28 @@
+C:\Users\Administrator.xingguangcuican\.nuget\packages\microsoft.web.webview2\1.0.2903.40\buildTransitive\..\\runtimes\win-x64\native_uap\Microsoft.Web.WebView2.Core.dll
+C:\Users\Administrator.xingguangcuican\.nuget\packages\microsoft.web.webview2\1.0.2903.40\lib_manual\net6.0-windows10.0.17763.0\Microsoft.Web.WebView2.Core.Projection.dll
+C:\Users\Administrator.xingguangcuican\.nuget\packages\microsoft.web.webview2\1.0.2903.40\lib\Microsoft.Web.WebView2.Core.winmd
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\App.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Calculator_pg.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Home.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\MainWindow.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Resuit.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Setting.xbf
+C:\Program Files (x86)\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.26100.0\Redist\Debug\x64\ucrtbased.dll
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\Images\SplashScreen.scale-200.png
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\Images\LockScreenLogo.scale-200.png
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\Images\Square150x150Logo.scale-200.png
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\Images\Square44x44Logo.scale-200.png
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\Images\Square44x44Logo.targetsize-24_altform-unplated.png
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\Images\StoreLogo.png
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\Images\Wide310x150Logo.scale-200.png
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\resources.pri
+C:\Users\Administrator.xingguangcuican\source\repos\App2\packages\Microsoft.Web.WebView2.1.0.2903.40\runtimes\win-x64\native_uap\Microsoft.Web.WebView2.Core.dll
+C:\Users\Administrator.xingguangcuican\source\repos\App2\packages\Microsoft.Web.WebView2.1.0.2903.40\lib\Microsoft.Web.WebView2.Core.winmd
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2\Generated Files\App.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2\Generated Files\Calculator_pg.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2\Generated Files\Home.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2\Generated Files\MainWindow.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2\Generated Files\Resuit.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2\Generated Files\Setting.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\App2.exe
+C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\App2.pdb

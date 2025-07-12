@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="MainWindow.xaml" />
+    <Page Include="Home.xaml" />
+    <Page Include="Calculator_pg.xaml" />
+    <Page Include="Resuit.xaml" />
+    <Page Include="Setting.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="MainWindow.idl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="depend\SCE_Page.cpp" />
+    <ClCompile Include="depend\SCEz_Test.cpp" />
+    <ClCompile Include="depend\UmaSCE_Main.cpp" />
+    <ClCompile Include="depend\UmaSCE_UI.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="depend\json.hpp" />
+    <ClInclude Include="depend\lio.h" />
+    <ClInclude Include="depend\SCE_Page.h" />
+    <ClInclude Include="depend\SCE_Setting.h" />
+    <ClInclude Include="depend\UmaSCE_Main.h" />
+    <ClInclude Include="depend\UmaSCE_tools.h" />
+    <ClInclude Include="depend\UmaSCE_UI.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{e48dc53e-40b1-40cb-970a-f89935452892}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natstepfilter" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="App2.rc" />
+  </ItemGroup>
+</Project>

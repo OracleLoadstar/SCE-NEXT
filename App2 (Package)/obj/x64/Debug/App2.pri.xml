@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<PriInfo>
+	<ResourceMap name="App2" version="1.0" primary="true">
+		<Qualifiers/>
+		<ResourceMapSubtree name="Files">
+			<NamedResource name="App.xbf" uri="ms-resource://App2/Files/App.xbf">
+				<Candidate type="Path">
+					<Value>App.xbf</Value>
+				</Candidate>
+			</NamedResource>
+			<NamedResource name="Calculator_pg.xbf" uri="ms-resource://App2/Files/Calculator_pg.xbf">
+				<Candidate type="Path">
+					<Value>Calculator_pg.xbf</Value>
+				</Candidate>
+			</NamedResource>
+			<NamedResource name="Home.xbf" uri="ms-resource://App2/Files/Home.xbf">
+				<Candidate type="Path">
+					<Value>Home.xbf</Value>
+				</Candidate>
+			</NamedResource>
+			<NamedResource name="MainWindow.xbf" uri="ms-resource://App2/Files/MainWindow.xbf">
+				<Candidate type="Path">
+					<Value>MainWindow.xbf</Value>
+				</Candidate>
+			</NamedResource>
+			<NamedResource name="Resuit.xbf" uri="ms-resource://App2/Files/Resuit.xbf">
+				<Candidate type="Path">
+					<Value>Resuit.xbf</Value>
+				</Candidate>
+			</NamedResource>
+			<NamedResource name="Setting.xbf" uri="ms-resource://App2/Files/Setting.xbf">
+				<Candidate type="Path">
+					<Value>Setting.xbf</Value>
+				</Candidate>
+			</NamedResource>
+		</ResourceMapSubtree>
+	</ResourceMap>
+</PriInfo>

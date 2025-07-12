@@ -1,0 +1,9 @@
+namespace App2
+{
+    [default_interface]
+    runtimeclass Calculator_pg : Microsoft.UI.Xaml.Controls.Page
+    {
+        Calculator_pg();
+        Int32 MyProperty;
+    }
+}
