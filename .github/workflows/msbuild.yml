@@ -10,20 +10,18 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # 使用最新的 Windows 运行器
+    runs-on: windows-latest
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4 # 检出代码
+      uses: actions/checkout@v4
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # 设置 .NET SDK 版本为 8.0.x
+        dotnet-version: '8.0.x'
 
     - name: Install Visual Studio Workloads for WinUI 3
-      # 这是一个关键步骤，确保 Visual Studio 安装了 WinUI 3 所需的工作负载
-      # 使用 PowerShell 脚本来执行
       run: |
         $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
         $vsInstallDir = & "$vsInstallerPath" -latest -products * -property installationPath
@@ -42,27 +40,23 @@ jobs:
         Write-Host "Found Visual Studio installation at: $vsInstallDir"
         Write-Host "Installing VS workloads using: $installerPath"
 
-        # 添加 WinUI 3 开发通常需要的 Universal, Managed Desktop 和 Native Desktop 工作负载
         & "$installerPath" modify `
             --installPath "$vsInstallDir" `
             --add Microsoft.VisualStudio.Workload.Universal `
             --add Microsoft.VisualStudio.Workload.ManagedDesktop `
             --add Microsoft.VisualStudio.Workload.NativeDesktop `
-            --quiet --wait --norestart # 静默安装并等待完成
+            --quiet --wait --norestart
 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Failed to install Visual Studio workloads. Exit code: $LASTEXITCODE"
             exit $LASTEXITCODE
         }
         Write-Host "Visual Studio workloads installed successfully."
-      shell: pwsh # 明确指定使用 PowerShell shell
+      shell: pwsh
 
     - name: Find MSBuild.exe
-      # 查找 Visual Studio 安装中的 MSBuild.exe 路径
-      # 这是之前遇到问题的地方，现在使用硬编码路径（基于常见情况）确保其找到
-      id: find_msbuild # 设置一个ID，以便后续步骤引用其输出
+      id: find_msbuild
       run: |
-        # 假设 Visual Studio 2022 Enterprise Edition 安装在默认位置
         $vsInstallDir = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
         $msbuildPath = Join-Path $vsInstallDir "MSBuild\Current\Bin\MSBuild.exe"
 
@@ -71,69 +65,59 @@ jobs:
             exit 1
         }
         Write-Host "Found MSBuild.exe at: $msbuildPath"
-        # 将 MSBuild 路径设置为步骤输出，供后续步骤使用
         echo "MSBUILD_PATH=$msbuildPath" >> $env:GITHUB_OUTPUT
-      shell: pwsh # 明确指定使用 PowerShell shell
+      shell: pwsh
 
     - name: Clear NuGet cache and Restore packages
-      # 清除本地 NuGet 缓存并重新运行 dotnet restore
-      # 尽管 MSBuild 会在构建时进行还原，但确保 NuGet 包状态良好是最佳实践
       run: |
-        dotnet nuget locals all --clear # 清除所有 NuGet 缓存
-        dotnet restore App2.sln # 重新还原解决方案中的所有项目
-      shell: pwsh # 明确指定使用 PowerShell shell
+        dotnet nuget locals all --clear
+        dotnet restore App2.sln
+      shell: pwsh
 
     - name: List contents of WindowsAppSDK build tools directory
-      # 这是一个调试步骤，用于确认 Windows App SDK 编译器的 DLL 是否存在
-      # 帮助排查 MSB4062 错误
       run: |
         $appSdkPath = "D:\a\SCE-NEXT\SCE-NEXT\packages\Microsoft.WindowsAppSDK.1.7.250606001\tools\net472"
         Write-Host "Listing contents of: $appSdkPath"
         if (-not (Test-Path $appSdkPath)) {
             Write-Warning "Path does not exist: $appSdkPath. This might indicate a NuGet restore issue."
         } else {
-            dir $appSdkPath # 列出目录内容
+            dir $appSdkPath
         }
-      shell: pwsh # 明确指定使用 PowerShell shell
+      shell: pwsh
 
     - name: Build WinUI 3 project
-      # 使用找到的 MSBuild.exe 来构建解决方案
-      # 在 PowerShell 中，将外部命令路径和参数作为单个字符串传递是安全且常见的做法
-      shell: pwsh # 明确指定使用 PowerShell shell
+      shell: pwsh # 确保使用 PowerShell shell
       run: |
-        # 使用内联赋值，并确保整个命令字符串被正确引用
-        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
+        # 修正：先将路径赋值给 PowerShell 变量，然后使用 & 运算符调用
+        $msbuildPath = "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}"
+        & "$msbuildPath" App2.sln /p:Configuration=Release /p:Platform=x64
 
     - name: Publish WinUI 3 project
-      # 使用找到的 MSBuild.exe 来发布 WinUI 3 项目并生成 MSIX 包
-      shell: pwsh # 明确指定使用 PowerShell shell
+      shell: pwsh # 确保使用 PowerShell shell
       run: |
-        # 使用内联赋值，并确保整个命令字符串被正确引用
-        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
+        # 修正：先将路径赋值给 PowerShell 变量，然后使用 & 运算符调用
+        $msbuildPath = "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}"
+        & "$msbuildPath" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
 
     - name: List AppPackages directory content
-      # 列出生成的 MSIX 包的目录内容，以便确认文件生成情况
       run: dir "App2 (Package)\AppPackages"
-      shell: pwsh # 明确指定使用 PowerShell shell
+      shell: pwsh
 
     - name: Find MSIX package
-      # 查找并获取生成的 MSIX 包的完整路径
       id: find_msix
       run: |
-        # 查找 AppPackages 目录下最新的 .msix 或 .msixbundle 文件
         $msixFile = Get-ChildItem -Path "App2 (Package)\AppPackages" -Filter "*.msix", "*.msixbundle" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
         
         if (-not $msixFile) {
-            Write-Error "No MSIX or MSIXBUNDLE file found in AppPackages. Build might have failed or package was not generated."
+            Write-Error "在 AppPackages 中未找到 MSIX 或 MSIXBUNDLE 文件。"
             exit 1
         }
         Write-Host "Found MSIX file: $msixFile"
         echo "MSIX_PATH=$msixFile" >> $env:GITHUB_OUTPUT
-      shell: pwsh # 明确指定使用 PowerShell shell
+      shell: pwsh
 
     - name: Upload MSIX artifact
-      # 将生成的 MSIX 包作为 GitHub Actions 的 Artifact 上传，以便下载
       uses: actions/upload-artifact@v4
       with:
         name: WinUI3-App-MSIX
-        path: ${{ steps.find_msix.outputs.MSIX_PATH }} # 使用上一步骤找到的 MSIX 文件路径
+        path: ${{ steps.find_msix.outputs.MSIX_PATH }}
