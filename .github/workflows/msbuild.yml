@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # WinUI 3项目必须在Windows环境上编译
+    runs-on: windows-latest
 
     steps:
     - name: Checkout repository
@@ -19,12 +19,41 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # 确保这里与你的项目目标框架一致，例如 .NET 6、7 或 8
+        dotnet-version: '8.0.x' # 确保这里与你的项目目标框架一致（例如 .NET 6, 7, 8）
 
-    - name: Install WinUI 3 Workloads # 修正后的步骤名称和命令
+    - name: Install Visual Studio Workloads for WinUI 3 # 关键的新增步骤
       run: |
-        dotnet workload list
-        dotnet workload install microsoft-windows-sdk-desktop microsoft-windows-sdk-webview2 --ignore-failed-installs
+        # 找到 Visual Studio Installer 的路径
+        $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        $vsInstallDir = & "$vsInstallerPath" -latest -products Microsoft.VisualStudio.Product.Community -property installationPath
+
+        if (-not $vsInstallDir) {
+            Write-Error "Could not find Visual Studio installation path."
+            exit 1
+        }
+
+        # 更可靠的方式是直接调用 Microsoft Visual Studio Installer
+        $installerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+
+        Write-Host "Installing VS workloads using: $installerPath"
+
+        # 使用 --quiet --wait --norestart --noWeb --includeRecommended 命令进行静默安装
+        # --includeRecommended 确保安装推荐的组件
+        # --noWeb 避免下载，如果组件已经在本地缓存（但在GitHub Actions上不太可能）
+        # 这里指定了WinUI 3开发最常用的Visual Studio工作负载
+        & "$installerPath" modify `
+            --installPath "$vsInstallDir" `
+            --add Microsoft.VisualStudio.Workload.Universal `
+            --add Microsoft.VisualStudio.Workload.ManagedDesktop `
+            --add Microsoft.VisualStudio.Workload.NativeDesktop `
+            --quiet --wait --norestart
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to install Visual Studio workloads. Exit code: $LASTEXITCODE"
+            exit $LASTEXITCODE
+        }
+        Write-Host "Visual Studio workloads installed successfully."
+      shell: pwsh # 确保使用 PowerShell
 
     - name: Restore NuGet packages
       run: dotnet restore App2.sln
