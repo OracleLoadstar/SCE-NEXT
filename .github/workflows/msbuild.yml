@@ -68,25 +68,33 @@ jobs:
         echo "MSBUILD_PATH=$msbuildPath" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
-    - name: Restore NuGet packages (Optional, MSBuild handles it)
+    - name: Clear NuGet cache and Restore packages # 新增步骤
       run: |
-        dotnet restore App2.sln
+        dotnet nuget locals all --clear # 清除所有 NuGet 缓存
+        dotnet restore App2.sln # 重新运行还原
+      shell: pwsh
+
+    - name: List contents of WindowsAppSDK build tools directory # 新增调试步骤
+      run: |
+        $appSdkPath = "D:\a\SCE-NEXT\SCE-NEXT\packages\Microsoft.WindowsAppSDK.1.7.250606001\tools\net472"
+        Write-Host "Listing contents of: $appSdkPath"
+        if (-not (Test-Path $appSdkPath)) {
+            Write-Host "路径不存在: $appSdkPath"
+        } else {
+            dir $appSdkPath # 列出目录内容
+        }
+      shell: pwsh
 
     - name: Build WinUI 3 project
-      # 修正：在 MSBuild.exe 路径周围添加双引号
-      run: |
-        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
+      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
       shell: cmd
 
     - name: Publish WinUI 3 project
-      # 修正：在 MSBuild.exe 路径周围添加双引号
-      run: |
-        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
+      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
       shell: cmd
 
     - name: List AppPackages directory content
-      run: |
-        dir "App2 (Package)\AppPackages"
+      run: dir "App2 (Package)\AppPackages"
       shell: pwsh
 
     - name: Find MSIX package
@@ -95,7 +103,7 @@ jobs:
         $msixFile = Get-ChildItem -Path "App2 (Package)\AppPackages" -Filter "*.msix", "*.msixbundle" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
         
         if (-not $msixFile) {
-            Write-Error "No MSIX or MSIXBUNDLE file found in AppPackages."
+            Write-Error "在 AppPackages 中未找到 MSIX 或 MSIXBUNDLE 文件。"
             exit 1
         }
         echo "Found MSIX file: $msixFile"
