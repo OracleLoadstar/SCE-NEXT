@@ -23,7 +23,7 @@ jobs:
 
     - name: Install WinUI 3 Workloads # 修正后的步骤名称和命令
       run: |
-        dotnet workload search
+        dotnet workload list
         dotnet workload install microsoft-windows-sdk-desktop microsoft-windows-sdk-webview2 --ignore-failed-installs
 
     - name: Restore NuGet packages
