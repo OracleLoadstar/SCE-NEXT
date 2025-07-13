@@ -74,29 +74,55 @@ jobs:
         dotnet restore App2.sln
       shell: pwsh
 
-    - name: List contents of WindowsAppSDK build tools directory
+    - name: List contents of WindowsAppSDK build tools directory # 关键诊断步骤
       run: |
-        $appSdkPath = "D:\a\SCE-NEXT\SCE-NEXT\packages\Microsoft.WindowsAppSDK.1.7.250606001\tools\net472"
-        Write-Host "Listing contents of: $appSdkPath"
-        if (-not (Test-Path $appSdkPath)) {
-            Write-Warning "Path does not exist: $appSdkPath. This might indicate a NuGet restore issue."
+        $appSdkPackageRoot = "D:\a\SCE-NEXT\SCE-NEXT\packages\Microsoft.WindowsAppSDK.1.7.250606001"
+        $appSdkToolsNet472Path = Join-Path $appSdkPackageRoot "tools\net472"
+        $compilerDllPath = Join-Path $appSdkToolsNet472Path "Microsoft.UI.Xaml.Markup.Compiler.dll"
+
+        Write-Host "--- Checking WindowsAppSDK Compiler DLL existence ---"
+        Write-Host "Expected package root: $appSdkPackageRoot"
+        Write-Host "Expected compiler directory: $appSdkToolsNet472Path"
+        Write-Host "Expected compiler DLL: $compilerDllPath"
+
+        if (-not (Test-Path $appSdkPackageRoot)) {
+            Write-Warning "WindowsAppSDK package root does not exist: $appSdkPackageRoot. NuGet restore likely failed to download it completely."
         } else {
-            dir $appSdkPath
+            Write-Host "Listing contents of package root: $appSdkPackageRoot"
+            dir $appSdkPackageRoot -Recurse -Depth 2 # 列出包根目录及下一级子目录
         }
+
+        Write-Host "--- Detailed listing of compiler tools directory ---"
+        if (-not (Test-Path $appSdkToolsNet472Path)) {
+            Write-Warning "Compiler tools path does not exist: $appSdkToolsNet472Path. Check NuGet package structure."
+        } else {
+            dir $appSdkToolsNet472Path # 列出具体工具目录内容
+        }
+
+        if (-not (Test-Path $compilerDllPath)) {
+            Write-Error "Compiler DLL is MISSING at: $compilerDllPath. This is the root cause of MSB4062."
+            # 可以考虑在此处尝试重新下载或强制更新 NuGet 包，但首先诊断原因
+            exit 1 # 如果文件确实缺失，则直接失败，以便更快看到问题
+        } else {
+            Write-Host "Compiler DLL found: $compilerDllPath"
+            # 额外诊断：检查 DLL 的依赖项 (可选，通常需要特定工具如 Dependency Walker)
+            # 例如，你可以尝试加载它在一个简单的powershell脚本中，看看是否有COM异常等
+        }
+        Write-Host "--- End of WindowsAppSDK Compiler DLL check ---"
       shell: pwsh
 
     - name: Build WinUI 3 project
-      shell: pwsh # 确保使用 PowerShell shell
+      shell: pwsh
       run: |
-        # 修正：先将路径赋值给 PowerShell 变量，然后使用 & 运算符调用
         $msbuildPath = "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}"
+        Write-Host "Attempting to build with MSBuild: $msbuildPath"
         & "$msbuildPath" App2.sln /p:Configuration=Release /p:Platform=x64
 
     - name: Publish WinUI 3 project
-      shell: pwsh # 确保使用 PowerShell shell
+      shell: pwsh
       run: |
-        # 修正：先将路径赋值给 PowerShell 变量，然后使用 & 运算符调用
         $msbuildPath = "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}"
+        Write-Host "Attempting to publish with MSBuild: $msbuildPath"
         & "$msbuildPath" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
 
     - name: List AppPackages directory content
