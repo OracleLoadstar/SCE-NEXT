@@ -19,43 +19,39 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # 根据你的项目需求设置.NET SDK版本，如果你的项目是.NET 6，请改为 '6.0.x'
+        dotnet-version: '8.0.x' # 确保这里与你的项目目标框架一致，例如 .NET 6、7 或 8
 
-    - name: Install WinUI 3 Templates and Workloads
+    - name: Install WinUI 3 Workloads # 修正后的步骤名称和命令
       run: |
-        dotnet new install Microsoft.Windows.Sdk.WinUI.Templates::* --force
-        dotnet workload install microsoft-windows-sdk-webview2-x64 microsoft-windows-sdk-winui-desktop --ignore-failed-installs # 安装WinUI 3桌面开发工作负载
+        dotnet workload install microsoft-windows-sdk-desktop microsoft-windows-sdk-webview2 --ignore-failed-installs
 
     - name: Restore NuGet packages
-      run: dotnet restore App2.sln # 这里替换为你的解决方案文件名 App2.sln
+      run: dotnet restore App2.sln
 
     - name: Build WinUI 3 project
-      run: dotnet build App2.sln --configuration Release /p:Platform=x64 # 这里替换为你的解决方案文件名 App2.sln
-      # 可以根据需要调整平台，例如 /p:Platform="Any CPU" 或 /p:Platform=x86
+      run: dotnet build App2.sln --configuration Release /p:Platform=x64
 
     - name: Publish WinUI 3 project
-      run: dotnet publish "App2 (Package)/App2 (Package).csproj" -c Release -r win-x64 --self-contained true # 这里替换为你的打包项目名和路径
-      # 注意：如果你的打包项目名称或路径包含空格，需要用双引号括起来。
+      run: dotnet publish "App2 (Package)/App2 (Package).csproj" -c Release -r win-x64 --self-contained true
 
     - name: List publish directory content
-      run: dir "App2 (Package)/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish" # 替换为你的打包项目名和目标框架路径
+      run: dir "App2 (Package)/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish"
 
     - name: Find MSIX package
       id: find_msix
       run: |
         $msixFile = Get-ChildItem -Path "App2 (Package)/AppPackages" -Filter "*.msix" -Recurse | Select-Object -ExpandProperty FullName
         echo "Found MSIX file: $msixFile"
-        echo "MSIX_PATH=$msixFile" >> $env:GITHUB_OUTPUT # 将MSIX文件路径输出到GitHub Actions变量
+        echo "MSIX_PATH=$msixFile" >> $env:GITHUB_OUTPUT
 
     - name: Upload MSIX artifact
       uses: actions/upload-artifact@v4
       with:
         name: WinUI3-App-MSIX
-        path: ${{ steps.find_msix.outputs.MSIX_PATH }} # 使用之前找到的MSIX文件路径
+        path: ${{ steps.find_msix.outputs.MSIX_PATH }}
 
-    # 如果你还需要上传非打包的可执行文件，可以添加以下步骤
     - name: Upload Published Binaries
       uses: actions/upload-artifact@v4
       with:
         name: WinUI3-Published-Binaries
-        path: "App2 (Package)/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish" # 替换为你的发布路径
+        path: "App2 (Package)/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish"
