@@ -40,6 +40,7 @@ jobs:
         Write-Host "Found Visual Studio installation at: $vsInstallDir"
         Write-Host "Installing VS workloads using: $installerPath"
 
+        # 尝试安装工作负载（此步骤之前已成功，所以保留它）
         & "$installerPath" modify `
             --installPath "$vsInstallDir" `
             --add Microsoft.VisualStudio.Workload.Universal `
@@ -54,15 +55,27 @@ jobs:
         Write-Host "Visual Studio workloads installed successfully."
       shell: pwsh
 
-    - name: Find MSBuild.exe # 新增步骤：查找 MSBuild.exe
-      id: find_msbuild
+    - name: Debug MSBuild.exe Path Finding # 重点调试步骤
+      id: find_msbuild_debug
       run: |
-        # 最可靠的方式是通过 vswhere 找到 MSBuild.exe 的路径
         $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        $msbuildPath = & "$vswherePath" -latest -products * -requires Microsoft.Component.MSBuild -property msbuildPath
-        
+        Write-Host "Checking if vswhere.exe exists at: $vswherePath"
+        if (-not (Test-Path $vswherePath)) {
+            Write-Error "vswhere.exe not found at expected path. This is a critical issue."
+            exit 1
+        }
+
+        Write-Host "Attempting to find MSBuild.exe using vswhere.exe..."
+        # 捕获 vswhere 的所有输出用于调试
+        $vswhereOutput = & "$vswherePath" -latest -products * -requires Microsoft.Component.MSBuild -property msbuildPath *>&1
+        # 从输出中尝试提取路径，过滤掉其他信息
+        $msbuildPath = ($vswhereOutput | Select-String -Pattern "^C:\\.*MSBuild\.exe$").ToString().Trim()
+
+        Write-Host "vswhere.exe 原始输出:"
+        $vswhereOutput | ForEach-Object { Write-Host $_ }
+
         if (-not $msbuildPath) {
-            Write-Error "Could not find MSBuild.exe. Build will fail."
+            Write-Error "尝试通过 vswhere.exe 查找 MSBuild.exe 失败。上面的 vswhere 输出可能包含线索。"
             exit 1
         }
         Write-Host "Found MSBuild.exe at: $msbuildPath"
@@ -71,29 +84,29 @@ jobs:
 
     # 注意：dotnet restore 对于 .wapproj/.vcxproj 可能仍然显示警告，但 MSBuild.exe 在构建期间会处理依赖关系。
     - name: Restore NuGet packages (Optional, MSBuild handles it)
-      run: dotnet restore App2.sln # 保留此步骤用于 .NET 项目，但 MSBuild 构建命令也会执行还原
+      run: dotnet restore App2.sln
 
-    - name: Build WinUI 3 project # 修改为使用 MSBuild.exe
-      run: ${{ steps.find_msbuild.outputs.MSBUILD_PATH }} App2.sln /p:Configuration=Release /p:Platform=x64
-      shell: cmd # 使用 cmd shell 以确保 MSBuild.exe 命令正确执行
+    - name: Build WinUI 3 project
+      # 使用调试步骤的输出
+      run: ${{ steps.find_msbuild_debug.outputs.MSBUILD_PATH }} App2.sln /p:Configuration=Release /p:Platform=x64
+      shell: cmd
 
-    - name: Publish WinUI 3 project # 修改为使用 MSBuild.exe 打包
-      run: ${{ steps.find_msbuild.outputs.MSBUILD_PATH }} "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
-      shell: cmd # 使用 cmd shell 以确保 MSBuild.exe 命令正确执行
-      # 这里增加了一些 MSIX 打包常用的 MSBuild 参数
+    - name: Publish WinUI 3 project
+      # 使用调试步骤的输出
+      run: ${{ steps.find_msbuild_debug.outputs.MSBUILD_PATH }} "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
+      shell: cmd
 
-    - name: List AppPackages directory content # 修改为列出 AppPackages 目录
+    - name: List AppPackages directory content
       run: dir "App2 (Package)\AppPackages"
       shell: pwsh
 
     - name: Find MSIX package
       id: find_msix
       run: |
-        # 查找 AppPackages 目录下最新的 .msix 或 .msixbundle 文件
         $msixFile = Get-ChildItem -Path "App2 (Package)\AppPackages" -Filter "*.msix", "*.msixbundle" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
         
         if (-not $msixFile) {
-            Write-Error "No MSIX or MSIXBUNDLE file found in AppPackages."
+            Write-Error "在 AppPackages 中未找到 MSIX 或 MSIXBUNDLE 文件。"
             exit 1
         }
         echo "Found MSIX file: $msixFile"
@@ -105,6 +118,3 @@ jobs:
       with:
         name: WinUI3-App-MSIX
         path: ${{ steps.find_msix.outputs.MSIX_PATH }}
-
-    # 移除了 Upload Published Binaries 步骤，因为通常对于 MSIX 项目，MSIX 包是主要的可部署 artifact。
-    # 如果你确实需要其他二进制文件，你需要确认它们在 MSBuild.exe 发布后的具体路径。
