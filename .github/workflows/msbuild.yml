@@ -69,20 +69,24 @@ jobs:
       shell: pwsh
 
     - name: Restore NuGet packages (Optional, MSBuild handles it)
-      run: dotnet restore App2.sln
+      run: |
+        dotnet restore App2.sln
 
     - name: Build WinUI 3 project
       # 修正：在 MSBuild.exe 路径周围添加双引号
-      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
+      run: |
+        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
       shell: cmd
 
     - name: Publish WinUI 3 project
       # 修正：在 MSBuild.exe 路径周围添加双引号
-      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
+      run: |
+        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
       shell: cmd
 
     - name: List AppPackages directory content
-      run: dir "App2 (Package)\AppPackages"
+      run: |
+        dir "App2 (Package)\AppPackages"
       shell: pwsh
 
     - name: Find MSIX package
