@@ -1,12 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Page
+<Page x:ConnectionId='1'
     x:Class="App2.Setting"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:App"
+    xmlns:local="using:App2"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+                        >
 
     <Grid Background="Transparent">
         <!-- 背景色/云母效果由主窗口决定，内容区居中最大宽度响应式 -->
@@ -34,8 +35,8 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="24,8,0,8">
                                     <TextBlock Text="欢迎界面" FontSize="16" FontWeight="SemiBold" Margin="2,8,24,0"/>
-                                    <TextBlock Text="关闭后将异常首页条目，直接展示计算界面" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,24,8"/>
-                                    <ToggleSwitch x:ConnectionId='6' x:Name="IsShowWelcome" Header="欢迎界面" OnContent="开" OffContent="关"  Grid.Column="1" VerticalAlignment="Stretch" Margin="2,0,24,0"/>
+                                    <TextBlock Text="关闭后将移除首页条目，直接展示计算界面（下次启动生效）" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,24,8"/>
+                                    <ToggleSwitch x:ConnectionId='6' x:Name="IsShowWelcome" Header="欢迎界面" OnContent="开" OffContent="关"  Grid.Column="1" VerticalAlignment="Stretch" Margin="2,0,24,0"                                />
                                 </StackPanel>
                             </Grid>
                         </Border>

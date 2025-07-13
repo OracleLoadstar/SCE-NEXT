@@ -3,27 +3,28 @@
     x:Class="App2.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:SCE_NEXT"
+    xmlns:local="using:App2"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="SCE-NEXT">
+    Title="SCE-NEXT"
+    >
 
     <Grid>
         <NavigationView x:ConnectionId='2'
-            x:Name="NavigationMain"
-            PaneDisplayMode="LeftCompact"
-                                                              
-            IsBackButtonVisible="Collapsed">
+    x:Name="NavigationMain"
+    PaneDisplayMode="LeftCompact"
+                                                      
+    IsBackButtonVisible="Collapsed">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="首页" Icon="Home" Tag="home" />
                 <NavigationViewItem Content="计算" Icon="Calculator" Tag="calculator" />
-                
+
                 <!--NavigationViewItem Content="About" Icon="Info" Tag="about" /-->
             </NavigationView.MenuItems>
             <Frame x:ConnectionId='3' x:Name="Content" Margin="48,0,0,0"/>
         </NavigationView>
-                        
+
     </Grid>
 </Window>
 

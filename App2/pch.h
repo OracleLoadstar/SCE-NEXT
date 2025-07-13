@@ -23,3 +23,11 @@
 #include <winrt/Microsoft.UI.Xaml.Shapes.h>
 #include <winrt/Microsoft.UI.Dispatching.h>
 #include <wil/cppwinrt_helpers.h>
+#include <winrt/Windows.Storage.h>
+#include <winrt/impl/Windows.UI.Xaml.Controls.2.h>
+#include "json.hpp"
+#include <winrt/impl/Microsoft.UI.Xaml.0.h>
+#include <winrt/impl/Windows.UI.Xaml.0.h>
+#include <winrt/impl/Windows.ApplicationModel.2.h>
+#include <winrt/impl/Windows.ApplicationModel.Core.0.h>
+#include <winrt/Windows.ApplicationModel.Core.h>

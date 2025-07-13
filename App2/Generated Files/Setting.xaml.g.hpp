@@ -40,6 +40,18 @@ namespace winrt::App2::implementation
     {
         switch (connectionId)
         {
+        case 1:
+            {
+                auto targetElement = target.as<::winrt::Microsoft::UI::Xaml::Controls::Page>();
+                auto weakThis = ::winrt::make_weak<class_type>(*this);
+                targetElement.Loaded([weakThis](::winrt::Windows::Foundation::IInspectable const& p0, ::winrt::Microsoft::UI::Xaml::RoutedEventArgs const& p1){
+                    if (auto t = weakThis.get())
+                    {
+                        ::winrt::get_self<D>(t)->Page_Loaded(p0, p1);
+                    }
+                });
+            }
+            break;
         case 2:
             {
                 auto targetElement = target.as<::winrt::Microsoft::UI::Xaml::Controls::TextBox>();
@@ -68,6 +80,13 @@ namespace winrt::App2::implementation
             {
                 auto targetElement = target.as<::winrt::Microsoft::UI::Xaml::Controls::ToggleSwitch>();
                 this->IsShowWelcome(targetElement);
+                auto weakThis = ::winrt::make_weak<class_type>(*this);
+                targetElement.Toggled([weakThis](::winrt::Windows::Foundation::IInspectable const& p0, ::winrt::Microsoft::UI::Xaml::RoutedEventArgs const& p1){
+                    if (auto t = weakThis.get())
+                    {
+                        ::winrt::get_self<D>(t)->IsShowWelcome_Toggled(p0, p1);
+                    }
+                });
             }
             break;
         }

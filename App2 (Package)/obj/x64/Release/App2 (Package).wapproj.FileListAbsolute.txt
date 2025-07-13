@@ -1,0 +1,36 @@
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\Microsoft.Web.WebView2.Core.dll
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\Microsoft.Web.WebView2.Core.winmd
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\App.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\Calculator_pg.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\Home.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\MainWindow.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\Resuit.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\Setting.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\App2.exe
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\App2.pdb
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\resources.pri
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\AppxManifest.xml
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\App2 (Package).build.appxrecipe
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Release\Microsoft.Web.WebView2.Core.Projection.dll
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\App2 (Package).wapproj.AssemblyReference.cache
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\App2 (Package).wapproj.CoreCompileInputs.cache
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\App2 (Pa.D0050D68.Up2Date
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\App2.pri.xml
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\priconfig.xml
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\priconfig.xml.intermediate
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\unfiltered.layout.resfiles
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\unfiltered.layout.resfiles.intermediate
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\filtered.layout.resfiles
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\filtered.layout.resfiles.intermediate
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\excluded.layout.resfiles
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\excluded.layout.resfiles.intermediate
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\resources.resfiles
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\resources.resfiles.intermediate
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\pri.resfiles
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\pri.resfiles.intermediate
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\qualifiers.txt
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\qualifiers.txt.intermediate
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\MultipleQualifiersPerDimensionFound.txt
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\ProjectArchitectures.txt
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\.winmd_cache\$Microsoft.Web.WebView2.Core.winmd_638668258700000000.json
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Release\App2 (Package).wapproj.LastBuild.txt

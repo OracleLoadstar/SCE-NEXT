@@ -183,6 +183,24 @@ namespace winrt::impl
             check_hresult(_winrt_abi_type->put_MyProperty(value));
         }
     }
+    template <typename D> auto consume_App2_ISetting<D>::IsShowWelcome() const
+    {
+        void* value{};
+        if constexpr (!std::is_same_v<D, winrt::App2::ISetting>)
+        {
+            winrt::hresult _winrt_cast_result_code;
+            auto const _winrt_casted_result = impl::try_as_with_reason<winrt::App2::ISetting, D const*>(static_cast<D const*>(this), _winrt_cast_result_code);
+            check_hresult(_winrt_cast_result_code);
+            auto const _winrt_abi_type = *(abi_t<winrt::App2::ISetting>**)&_winrt_casted_result;
+            check_hresult(_winrt_abi_type->get_IsShowWelcome(&value));
+        }
+        else
+        {
+            auto const _winrt_abi_type = *(abi_t<winrt::App2::ISetting>**)this;
+            check_hresult(_winrt_abi_type->get_IsShowWelcome(&value));
+        }
+        return winrt::Microsoft::UI::Xaml::Controls::ToggleSwitch{ value, take_ownership_from_abi };
+    }
     template <typename D>
     struct produce<D, winrt::App2::ICalculator_pg> : produce_base<D, winrt::App2::ICalculator_pg>
     {
@@ -269,6 +287,14 @@ namespace winrt::impl
         {
             typename D::abi_guard guard(this->shim());
             this->shim().MyProperty(value);
+            return 0;
+        }
+        catch (...) { return to_hresult(); }
+        int32_t __stdcall get_IsShowWelcome(void** value) noexcept final try
+        {
+            clear_abi(value);
+            typename D::abi_guard guard(this->shim());
+            *value = detach_from<winrt::Microsoft::UI::Xaml::Controls::ToggleSwitch>(this->shim().IsShowWelcome());
             return 0;
         }
         catch (...) { return to_hresult(); }

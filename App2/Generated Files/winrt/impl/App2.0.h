@@ -3,6 +3,10 @@
 #pragma once
 #ifndef WINRT_App2_0_H
 #define WINRT_App2_0_H
+WINRT_EXPORT namespace winrt::Microsoft::UI::Xaml::Controls
+{
+    struct ToggleSwitch;
+}
 WINRT_EXPORT namespace winrt::Microsoft::UI::Xaml::Markup
 {
     struct IXamlMetadataProvider;
@@ -49,7 +53,7 @@ namespace winrt::impl
     template <> inline constexpr guid guid_v<winrt::App2::IHome>{ 0x9E17E75E,0x37A1,0x5177,{ 0xB6,0x72,0x96,0xEB,0xCB,0xB5,0xF7,0x08 } }; // 9E17E75E-37A1-5177-B672-96EBCBB5F708
     template <> inline constexpr guid guid_v<winrt::App2::IMainWindow>{ 0xAC521E61,0x8FDF,0x52B6,{ 0xBF,0x8D,0x4D,0xAB,0x54,0x96,0x52,0xE7 } }; // AC521E61-8FDF-52B6-BF8D-4DAB549652E7
     template <> inline constexpr guid guid_v<winrt::App2::IResuit>{ 0xF690C5D1,0x159F,0x50C4,{ 0xBD,0xE0,0x18,0xAA,0x28,0x32,0x7A,0xDF } }; // F690C5D1-159F-50C4-BDE0-18AA28327ADF
-    template <> inline constexpr guid guid_v<winrt::App2::ISetting>{ 0x15919836,0x59BE,0x5240,{ 0x98,0x01,0x5C,0x35,0x53,0xC2,0x78,0x8E } }; // 15919836-59BE-5240-9801-5C3553C2788E
+    template <> inline constexpr guid guid_v<winrt::App2::ISetting>{ 0x00BC6989,0x72B1,0x5D2F,{ 0xB3,0x56,0xAB,0x89,0x44,0xF8,0x48,0x63 } }; // 00BC6989-72B1-5D2F-B356-AB8944F84863
     template <> struct default_interface<winrt::App2::Calculator_pg>{ using type = winrt::App2::ICalculator_pg; };
     template <> struct default_interface<winrt::App2::Home>{ using type = winrt::App2::IHome; };
     template <> struct default_interface<winrt::App2::MainWindow>{ using type = winrt::App2::IMainWindow; };
@@ -94,6 +98,7 @@ namespace winrt::impl
         {
             virtual int32_t __stdcall get_MyProperty(int32_t*) noexcept = 0;
             virtual int32_t __stdcall put_MyProperty(int32_t) noexcept = 0;
+            virtual int32_t __stdcall get_IsShowWelcome(void**) noexcept = 0;
         };
     };
     template <typename D>
@@ -141,6 +146,7 @@ namespace winrt::impl
     {
         [[nodiscard]] auto MyProperty() const;
         auto MyProperty(int32_t value) const;
+        [[nodiscard]] auto IsShowWelcome() const;
     };
     template <> struct consume<winrt::App2::ISetting>
     {

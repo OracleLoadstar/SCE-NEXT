@@ -31,4 +31,8 @@ namespace winrt::App2::implementation
     {
         throw hresult_not_implemented();
     }
+    winrt::Microsoft::UI::Xaml::Controls::ToggleSwitch Setting::IsShowWelcome()
+    {
+        throw hresult_not_implemented();
+    }
 }

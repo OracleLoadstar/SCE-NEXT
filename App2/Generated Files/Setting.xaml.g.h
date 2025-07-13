@@ -13,6 +13,9 @@
 // conflict with Storyboard::GetCurrentTime
 #undef GetCurrentTime
 
+#if __has_include(<winrt/Microsoft.UI.Xaml.h>)
+#include <winrt/Microsoft.UI.Xaml.h>
+#endif
 #if __has_include(<winrt/Microsoft.UI.Xaml.Controls.h>)
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
 #endif

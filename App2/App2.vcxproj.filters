@@ -23,7 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="depend\json.hpp" />
     <ClInclude Include="depend\lio.h" />
     <ClInclude Include="depend\SCE_Page.h" />
     <ClInclude Include="depend\SCE_Setting.h" />
@@ -31,6 +30,7 @@
     <ClInclude Include="depend\UmaSCE_tools.h" />
     <ClInclude Include="depend\UmaSCE_UI.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="json.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">

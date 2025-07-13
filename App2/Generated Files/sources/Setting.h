@@ -28,6 +28,7 @@ namespace winrt::App2::implementation
 
         int32_t MyProperty();
         void MyProperty(int32_t value);
+        winrt::Microsoft::UI::Xaml::Controls::ToggleSwitch IsShowWelcome();
     };
 }
 namespace winrt::App2::factory_implementation

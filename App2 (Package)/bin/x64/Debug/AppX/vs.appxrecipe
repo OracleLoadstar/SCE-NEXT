@@ -19,7 +19,7 @@
     <DeployOptionalPackages>false</DeployOptionalPackages>
     <WindowsSdkPath>C:\Program Files %28x86%29\Windows Kits\10\</WindowsSdkPath>
     <LayoutDir>C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 %28Package%29\bin\x64\Debug\AppX</LayoutDir>
-    <RegisteredManifestChecksum>E34A17CB1C23DD18B3BBB8A11834CD55DD868D5659EFB46BDA8B6286CDE71FD9</RegisteredManifestChecksum>
+    <RegisteredManifestChecksum>62274994BA2C51183B64F7BFDDB014DAB5AAFA4D379FD99F50540632B35C5842</RegisteredManifestChecksum>
     <RegisteredPackageMoniker>c662aa09-6e2c-4f57-8d2a-9ec4a13c2501_1.0.0.0_x64__75cr2b68sm664</RegisteredPackageMoniker>
     <RegisteredUserModeAppID>c662aa09-6e2c-4f57-8d2a-9ec4a13c2501_75cr2b68sm664!App</RegisteredUserModeAppID>
     <RegisteredPackageID>c662aa09-6e2c-4f57-8d2a-9ec4a13c2501</RegisteredPackageID>
@@ -30,7 +30,7 @@
     <AppXManifest Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 %28Package%29\bin\x64\Debug\AppxManifest.xml">
       <PackagePath>AppxManifest.xml</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
-      <Modified>2025-07-12T05:33:24.632</Modified>
+      <Modified>2025-07-13T06:27:26.075</Modified>
     </AppXManifest>
   </ItemGroup>
   <ItemGroup>
@@ -48,27 +48,27 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\App.xbf">
       <PackagePath>App.xbf</PackagePath>
-      <Modified>2025-07-12T05:06:20.875</Modified>
+      <Modified>2025-07-13T06:25:56.465</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Calculator_pg.xbf">
       <PackagePath>Calculator_pg.xbf</PackagePath>
-      <Modified>2025-07-12T05:06:20.875</Modified>
+      <Modified>2025-07-13T06:25:56.465</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Home.xbf">
       <PackagePath>Home.xbf</PackagePath>
-      <Modified>2025-07-12T05:06:20.875</Modified>
+      <Modified>2025-07-13T06:25:56.466</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\MainWindow.xbf">
       <PackagePath>MainWindow.xbf</PackagePath>
-      <Modified>2025-07-12T05:06:20.876</Modified>
+      <Modified>2025-07-13T06:25:56.466</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Resuit.xbf">
       <PackagePath>Resuit.xbf</PackagePath>
-      <Modified>2025-07-12T05:06:20.876</Modified>
+      <Modified>2025-07-13T06:25:56.467</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\Setting.xbf">
       <PackagePath>Setting.xbf</PackagePath>
-      <Modified>2025-07-12T05:33:16.658</Modified>
+      <Modified>2025-07-13T06:25:56.467</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Program Files %28x86%29\Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.26100.0\Redist\Debug\x64\ucrtbased.dll">
       <PackagePath>ucrtbased.dll</PackagePath>
@@ -110,11 +110,11 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 %28Package%29\bin\x64\Debug\resources.pri">
       <PackagePath>resources.pri</PackagePath>
-      <Modified>2025-07-12T05:33:24.587</Modified>
+      <Modified>2025-07-13T05:30:10.905</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Administrator.xingguangcuican\source\repos\App2\x64\Debug\App2\App2.exe">
       <PackagePath>App2.exe</PackagePath>
-      <Modified>2025-07-12T05:33:23.915</Modified>
+      <Modified>2025-07-13T06:27:25.400</Modified>
     </AppxPackagedFile>
   </ItemGroup>
   <ItemGroup>

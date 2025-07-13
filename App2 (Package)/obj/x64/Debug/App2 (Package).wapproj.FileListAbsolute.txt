@@ -9,6 +9,7 @@ C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\Home.xbf
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\MainWindow.xbf
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\Resuit.xbf
+C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\Setting.xbf
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\App2.exe
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\App2.pdb
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\resources.pri
@@ -33,4 +34,3 @@ C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Debug\ProjectArchitectures.txt
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Debug\.winmd_cache\$Microsoft.Web.WebView2.Core.winmd_638668258700000000.json
 C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\obj\x64\Debug\App2 (Package).wapproj.LastBuild.txt
-C:\Users\Administrator.xingguangcuican\source\repos\App2\App2 (Package)\bin\x64\Debug\Setting.xbf
