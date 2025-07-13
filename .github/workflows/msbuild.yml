@@ -19,34 +19,27 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # 确保这里与你的项目目标框架一致（例如 .NET 6, 7, 8）
+        dotnet-version: '8.0.x' # 确保这里与你的项目目标框架一致
 
-    - name: Install Visual Studio Workloads for WinUI 3 # 修正后的步骤
+    - name: Install Visual Studio Workloads for WinUI 3
       run: |
-        # 找到 Visual Studio Installer 的路径
         $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        # 查找最新安装的任何 Visual Studio 产品
         $vsInstallDir = & "$vsInstallerPath" -latest -products * -property installationPath
 
         if (-not $vsInstallDir) {
-            Write-Error "Could not find Visual Studio installation path using vswhere.exe. Please check if Visual Studio is installed on the runner."
+            Write-Error "Could not find Visual Studio installation path using vswhere.exe."
             exit 1
         }
 
-        # Visual Studio Installer 的可执行文件路径
         $installerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
-
         if (-not (Test-Path $installerPath)) {
-            Write-Error "Visual Studio Installer executable not found at $installerPath. This is unexpected on windows-latest."
+            Write-Error "Visual Studio Installer executable not found at $installerPath."
             exit 1
         }
 
         Write-Host "Found Visual Studio installation at: $vsInstallDir"
         Write-Host "Installing VS workloads using: $installerPath"
 
-        # 使用 --quiet --wait --norestart 命令进行静默安装
-        # --includeRecommended 确保安装推荐的组件
-        # 这里指定了WinUI 3开发最常用的Visual Studio工作负载
         & "$installerPath" modify `
             --installPath "$vsInstallDir" `
             --add Microsoft.VisualStudio.Workload.Universal `
@@ -59,26 +52,53 @@ jobs:
             exit $LASTEXITCODE
         }
         Write-Host "Visual Studio workloads installed successfully."
-      shell: pwsh # 确保使用 PowerShell
+      shell: pwsh
 
-    - name: Restore NuGet packages
-      run: dotnet restore App2.sln
+    - name: Find MSBuild.exe # 新增步骤：查找 MSBuild.exe
+      id: find_msbuild
+      run: |
+        # 最可靠的方式是通过 vswhere 找到 MSBuild.exe 的路径
+        $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        $msbuildPath = & "$vswherePath" -latest -products * -requires Microsoft.Component.MSBuild -property msbuildPath
+        
+        if (-not $msbuildPath) {
+            Write-Error "Could not find MSBuild.exe. Build will fail."
+            exit 1
+        }
+        Write-Host "Found MSBuild.exe at: $msbuildPath"
+        echo "MSBUILD_PATH=$msbuildPath" >> $env:GITHUB_OUTPUT
+      shell: pwsh
 
-    - name: Build WinUI 3 project
-      run: dotnet build App2.sln --configuration Release /p:Platform=x64
+    # 注意：dotnet restore 对于 .wapproj/.vcxproj 可能仍然显示警告，但 MSBuild.exe 在构建期间会处理依赖关系。
+    - name: Restore NuGet packages (Optional, MSBuild handles it)
+      run: dotnet restore App2.sln # 保留此步骤用于 .NET 项目，但 MSBuild 构建命令也会执行还原
 
-    - name: Publish WinUI 3 project
-      run: dotnet publish "App2 (Package)/App2 (Package).csproj" -c Release -r win-x64 --self-contained true
+    - name: Build WinUI 3 project # 修改为使用 MSBuild.exe
+      run: ${{ steps.find_msbuild.outputs.MSBUILD_PATH }} App2.sln /p:Configuration=Release /p:Platform=x64
+      shell: cmd # 使用 cmd shell 以确保 MSBuild.exe 命令正确执行
 
-    - name: List publish directory content
-      run: dir "App2 (Package)/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish"
+    - name: Publish WinUI 3 project # 修改为使用 MSBuild.exe 打包
+      run: ${{ steps.find_msbuild.outputs.MSBUILD_PATH }} "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
+      shell: cmd # 使用 cmd shell 以确保 MSBuild.exe 命令正确执行
+      # 这里增加了一些 MSIX 打包常用的 MSBuild 参数
+
+    - name: List AppPackages directory content # 修改为列出 AppPackages 目录
+      run: dir "App2 (Package)\AppPackages"
+      shell: pwsh
 
     - name: Find MSIX package
       id: find_msix
       run: |
-        $msixFile = Get-ChildItem -Path "App2 (Package)/AppPackages" -Filter "*.msix" -Recurse | Select-Object -ExpandProperty FullName
+        # 查找 AppPackages 目录下最新的 .msix 或 .msixbundle 文件
+        $msixFile = Get-ChildItem -Path "App2 (Package)\AppPackages" -Filter "*.msix", "*.msixbundle" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
+        
+        if (-not $msixFile) {
+            Write-Error "No MSIX or MSIXBUNDLE file found in AppPackages."
+            exit 1
+        }
         echo "Found MSIX file: $msixFile"
         echo "MSIX_PATH=$msixFile" >> $env:GITHUB_OUTPUT
+      shell: pwsh
 
     - name: Upload MSIX artifact
       uses: actions/upload-artifact@v4
@@ -86,8 +106,5 @@ jobs:
         name: WinUI3-App-MSIX
         path: ${{ steps.find_msix.outputs.MSIX_PATH }}
 
-    - name: Upload Published Binaries
-      uses: actions/upload-artifact@v4
-      with:
-        name: WinUI3-Published-Binaries
-        path: "App2 (Package)/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish"
+    # 移除了 Upload Published Binaries 步骤，因为通常对于 MSIX 项目，MSIX 包是主要的可部署 artifact。
+    # 如果你确实需要其他二进制文件，你需要确认它们在 MSBuild.exe 发布后的具体路径。
