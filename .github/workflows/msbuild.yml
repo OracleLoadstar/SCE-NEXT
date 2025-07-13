@@ -19,7 +19,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # 确保这里与你的项目目标框架一致
+        dotnet-version: '8.0.x'
 
     - name: Install Visual Studio Workloads for WinUI 3
       run: |
@@ -54,10 +54,9 @@ jobs:
         Write-Host "Visual Studio workloads installed successfully."
       shell: pwsh
 
-    - name: Find MSBuild.exe # 修正后的步骤
+    - name: Find MSBuild.exe
       id: find_msbuild
       run: |
-        # 直接使用我们从上一步骤日志中确认的 Visual Studio 安装路径来构造 MSBuild 路径
         $vsInstallDir = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
         $msbuildPath = Join-Path $vsInstallDir "MSBuild\Current\Bin\MSBuild.exe"
 
@@ -69,16 +68,17 @@ jobs:
         echo "MSBUILD_PATH=$msbuildPath" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
-    # 注意：dotnet restore 对于 .wapproj/.vcxproj 可能仍然显示警告，但 MSBuild.exe 在构建期间会处理依赖关系。
     - name: Restore NuGet packages (Optional, MSBuild handles it)
       run: dotnet restore App2.sln
 
     - name: Build WinUI 3 project
-      run: ${{ steps.find_msbuild.outputs.MSBUILD_PATH }} App2.sln /p:Configuration=Release /p:Platform=x64
+      # 修正：在 MSBuild.exe 路径周围添加双引号
+      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
       shell: cmd
 
     - name: Publish WinUI 3 project
-      run: ${{ steps.find_msbuild.outputs.MSBUILD_PATH }} "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
+      # 修正：在 MSBuild.exe 路径周围添加双引号
+      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
       shell: cmd
 
     - name: List AppPackages directory content
@@ -91,7 +91,7 @@ jobs:
         $msixFile = Get-ChildItem -Path "App2 (Package)\AppPackages" -Filter "*.msix", "*.msixbundle" -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
         
         if (-not $msixFile) {
-            Write-Error "在 AppPackages 中未找到 MSIX 或 MSIXBUNDLE 文件。"
+            Write-Error "No MSIX or MSIXBUNDLE file found in AppPackages."
             exit 1
         }
         echo "Found MSIX file: $msixFile"
