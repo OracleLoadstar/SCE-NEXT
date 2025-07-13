@@ -68,30 +68,34 @@ jobs:
         echo "MSBUILD_PATH=$msbuildPath" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
-    - name: Clear NuGet cache and Restore packages # 新增步骤
+    - name: Clear NuGet cache and Restore packages
       run: |
-        dotnet nuget locals all --clear # 清除所有 NuGet 缓存
-        dotnet restore App2.sln # 重新运行还原
+        dotnet nuget locals all --clear
+        dotnet restore App2.sln
       shell: pwsh
 
-    - name: List contents of WindowsAppSDK build tools directory # 新增调试步骤
+    - name: List contents of WindowsAppSDK build tools directory
       run: |
         $appSdkPath = "D:\a\SCE-NEXT\SCE-NEXT\packages\Microsoft.WindowsAppSDK.1.7.250606001\tools\net472"
         Write-Host "Listing contents of: $appSdkPath"
         if (-not (Test-Path $appSdkPath)) {
             Write-Host "路径不存在: $appSdkPath"
         } else {
-            dir $appSdkPath # 列出目录内容
+            dir $appSdkPath
         }
       shell: pwsh
 
     - name: Build WinUI 3 project
-      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
-      shell: cmd
+      shell: pwsh
+      run: |
+        # 修正：将整个命令作为字符串传递，确保 MSBuild 路径和所有参数都被正确引用
+        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" App2.sln /p:Configuration=Release /p:Platform=x64
 
     - name: Publish WinUI 3 project
-      run: "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
-      shell: cmd
+      shell: pwsh
+      run: |
+        # 修正：将整个命令作为字符串传递，确保 MSBuild 路径和所有参数都被正确引用
+        "${{ steps.find_msbuild.outputs.MSBUILD_PATH }}" "App2 (Package)/App2 (Package).csproj" /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxPackageDir="AppPackages\" /p:GenerateAppxPackageOnBuild=true /t:Publish
 
     - name: List AppPackages directory content
       run: dir "App2 (Package)\AppPackages"
